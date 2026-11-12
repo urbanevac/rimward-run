@@ -30,6 +30,7 @@ export class CombatScene extends Phaser.Scene {
   private hullPillBg!: Phaser.GameObjects.Graphics;
   private fuelPillText!: Phaser.GameObjects.Text;
   private crPillText!: Phaser.GameObjects.Text;
+  private lastDisplayedCredits = 65;
   private heatPillText!: Phaser.GameObjects.Text;
   private heatPillBg!: Phaser.GameObjects.Graphics;
   private contractBadgeBg!: Phaser.GameObjects.Graphics;
@@ -639,6 +640,22 @@ export class CombatScene extends Phaser.Scene {
 
     // Fuel & Credits
     this.fuelPillText.setText(`FUEL ${state.player.fuel}`);
+    if (this.lastDisplayedCredits !== undefined && state.player.credits !== this.lastDisplayedCredits) {
+      const delta = state.player.credits - this.lastDisplayedCredits;
+      this.tweens.add({
+        targets: this.crPillText,
+        scale: 1.25,
+        duration: 150,
+        yoyo: true,
+        ease: 'Quad.easeOut',
+      });
+      if (delta > 0) {
+        this.spawnFloatingText(256, 74, `+${delta} Cr`, '#facc15');
+      } else if (delta < 0) {
+        this.spawnFloatingText(256, 74, `${delta} Cr`, '#f87171');
+      }
+    }
+    this.lastDisplayedCredits = state.player.credits;
     this.crPillText.setText(`CR ${state.player.credits}`);
 
     // Heat pill (color-coded green -> amber -> red)
@@ -1343,8 +1360,21 @@ export class CombatScene extends Phaser.Scene {
       this.spawnFloatingText(
         this.intentBoxContainer.x,
         this.intentBoxContainer.y,
-        'INTENT JAMMED! (-15 Cr)',
+        result.creditsSpent > 0 ? `INTENT JAMMED! (-${result.creditsSpent} Cr)` : 'INTENT JAMMED!',
         '#fde047'
+      );
+    }
+
+    if (result.killedEnemy) {
+      const isFinal = this.engine.getState().isCampaignComplete;
+      const salvage = isFinal
+        ? (this.engine.getState().contract.voided ? 50 : this.engine.getState().contract.payout + 50)
+        : 35;
+      this.spawnFloatingText(
+        this.enemyShipContainer.x,
+        this.enemyShipContainer.y - 12,
+        isFinal ? `+${salvage} Cr BOUNTY & CONTRACT!` : `+${salvage} Cr SALVAGE!`,
+        '#facc15'
       );
     }
 
@@ -1550,6 +1580,7 @@ export class CombatScene extends Phaser.Scene {
     }
     this.setHandInteractive(false);
     this.sfx(state.outcome === 'VICTORY' ? 'win' : 'lose');
+    this.updateTopHud(state);
 
     this.modalContainer = this.add.container(0, 0).setDepth(200);
 
@@ -1608,6 +1639,7 @@ export class CombatScene extends Phaser.Scene {
     const redrawMarketContent = () => {
       marketContent.removeAll(true);
       const s = this.engine.getState();
+      this.updateTopHud(s);
 
       // Telemetry Bar at y = 124..156
       const barGfx = this.add.graphics();

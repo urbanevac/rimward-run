@@ -101,6 +101,7 @@ function forceIntoHand(engine: CombatEngine, templateId: Card['templateId']): Ca
   const ps = forceIntoHand(e, 'parang_snap')!;
   const r1 = e.playCard(ps.instanceId);
   check('Sector 1 Skiff defeated -> VICTORY (not campaign complete)', r1.killedEnemy && e.getState().outcome === 'VICTORY' && !e.getState().isCampaignComplete);
+  check('Sector 1 victory adds +35 Cr salvage (total 100 Cr)', e.getState().player.credits === 100);
 
   // Jump to Sector 2
   const jump2 = e.advanceToNextSector();
@@ -112,6 +113,7 @@ function forceIntoHand(engine: CombatEngine, templateId: Card['templateId']): Ca
   const ps2 = forceIntoHand(e, 'parang_snap')!;
   e.playCard(ps2.instanceId);
   check('Sector 2 Cutter defeated -> VICTORY', e.getState().outcome === 'VICTORY' && !e.getState().isCampaignComplete);
+  check('Sector 2 victory adds +35 Cr salvage (total 135 Cr)', e.getState().player.credits === 135);
 
   // Jump to Sector 3 (Bario Blockade)
   const jump3 = e.advanceToNextSector();
@@ -124,6 +126,7 @@ function forceIntoHand(engine: CombatEngine, templateId: Card['templateId']): Ca
   const ps3 = forceIntoHand(e, 'parang_snap')!;
   const r3 = e.playCard(ps3.instanceId);
   check('Sector 3 Boss defeated -> CAMPAIGN COMPLETE!', r3.killedEnemy && e.getState().outcome === 'VICTORY' && e.getState().isCampaignComplete);
+  check('Sector 3 victory adds 120 Cr contract + 50 Cr boss bounty (total 305 Cr)', e.getState().player.credits === 305);
 }
 
 // --- Heat Defeat ---

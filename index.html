@@ -64,9 +64,13 @@
         document.getElementById('dev-buy').onclick = () => {
           if (window.__combatEngine && window.__combatScene) {
             const items = window.__combatEngine.getState().availableMarketItems;
-            if (items.length > 0) {
-              window.__combatEngine.buyBlackMarketItem(items[0].id);
-              window.__combatScene.showOutcomeModal(window.__combatEngine.getState());
+            for (const item of items) {
+              const res = window.__combatEngine.buyBlackMarketItem(item.id);
+              if (res.success) {
+                window.__combatScene.refreshAllUI(false);
+                window.__combatScene.showOutcomeModal(window.__combatEngine.getState());
+                break;
+              }
             }
           }
         };

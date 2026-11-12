@@ -69,16 +69,18 @@ export class CombatEngine {
     this.state.isCampaignComplete = isFinalSector;
     if (isFinalSector) {
       if (!this.state.contract.voided) {
-        this.state.creditsEarnedThisRun = this.state.contract.payout + 50;
-        this.state.player.credits += this.state.creditsEarnedThisRun;
+        const payout = this.state.contract.payout + 50;
+        this.state.creditsEarnedThisRun += payout;
+        this.state.player.credits += payout;
       } else {
-        this.state.creditsEarnedThisRun = 50;
+        this.state.creditsEarnedThisRun += 50;
         this.state.player.credits += 50;
       }
       this.state.lastLog = `CAMPAIGN VICTORY! All 3 Sectors cleared!`;
     } else {
       const sectorSalvage = 35;
       this.state.player.credits += sectorSalvage;
+      this.state.creditsEarnedThisRun += sectorSalvage;
       this.state.lastLog = `Sector ${this.state.sector.number} Cleared! Recovered +${sectorSalvage} Cr salvage.`;
     }
   }
@@ -502,6 +504,22 @@ export class CombatEngine {
         success: false,
         reason: `Need ${item.cost} Credits (Have ${this.state.player.credits} Cr).`,
         message: 'Insufficient Credits!',
+      };
+    }
+
+    if (item.type === 'repair' && this.state.player.hull >= this.state.player.maxHull) {
+      return {
+        success: false,
+        reason: `Hull is already at maximum integrity (${this.state.player.maxHull}/${this.state.player.maxHull})!`,
+        message: 'Hull already full!',
+      };
+    }
+
+    if (item.type === 'cool' && this.state.player.heat <= 0) {
+      return {
+        success: false,
+        reason: 'Heat signature is already at 0%!',
+        message: 'Heat already 0%!',
       };
     }
 
