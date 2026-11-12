@@ -2,6 +2,8 @@
 
 A 9:16 portrait tactical card-battler / space-western smuggling roguelike built with **Vite + TypeScript (strict) + Phaser 3**. All art is generated procedurally at boot, so there are no external assets.
 
+🎮 **[Play Live on GitHub Pages](https://urbanevac.github.io/rimward-run/)** (Works directly in mobile & desktop browsers)
+
 ## Quick start
 
 ```bash
