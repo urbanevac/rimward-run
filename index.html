@@ -47,6 +47,41 @@
   </head>
   <body>
     <div id="game-container"></div>
+    <div id="dev-toolbar" style="display:none;position:fixed;top:8px;left:8px;z-index:9999;gap:6px;">
+      <button id="dev-kill" style="background:#ef4444;color:#fff;border:none;padding:6px 10px;font-size:11px;font-family:monospace;font-weight:bold;border-radius:4px;cursor:pointer;">KILL ENEMY</button>
+      <button id="dev-buy" style="background:#eab308;color:#000;border:none;padding:6px 10px;font-size:11px;font-family:monospace;font-weight:bold;border-radius:4px;cursor:pointer;">BUY MARKET</button>
+      <button id="dev-jump" style="background:#0284c7;color:#fff;border:none;padding:6px 10px;font-size:11px;font-family:monospace;font-weight:bold;border-radius:4px;cursor:pointer;">JUMP SECTOR</button>
+    </div>
+    <script>
+      if (location.search.includes('dev=1')) {
+        document.getElementById('dev-toolbar').style.display = 'flex';
+        document.getElementById('dev-kill').onclick = () => {
+          if (window.__combatScene && window.__combatEngine) {
+            window.__combatEngine.debugTriggerVictory();
+            window.__combatScene.showOutcomeModal(window.__combatEngine.getState());
+          }
+        };
+        document.getElementById('dev-buy').onclick = () => {
+          if (window.__combatEngine && window.__combatScene) {
+            const items = window.__combatEngine.getState().availableMarketItems;
+            if (items.length > 0) {
+              window.__combatEngine.buyBlackMarketItem(items[0].id);
+              window.__combatScene.showOutcomeModal(window.__combatEngine.getState());
+            }
+          }
+        };
+        document.getElementById('dev-jump').onclick = () => {
+          if (window.__combatEngine && window.__combatScene) {
+            window.__combatEngine.advanceToNextSector();
+            if (window.__combatScene.modalContainer) {
+              window.__combatScene.modalContainer.destroy();
+              window.__combatScene.modalContainer = undefined;
+            }
+            window.__combatScene.refreshAllUI(true);
+          }
+        };
+      }
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

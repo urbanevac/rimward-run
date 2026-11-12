@@ -198,8 +198,102 @@ export class BootScene extends Phaser.Scene {
     eGfx.fillStyle(0xffffff, 0.95);
     eGfx.fillRect(52, 39, 14, 4);
 
+    eGfx.generateTexture('ship_enemy_cutter', 168 * s, 96 * s);
     eGfx.generateTexture('ship_enemy', 168 * s, 96 * s);
     eGfx.destroy();
+
+    // =========================================================================
+    // 3. CUSTOMS PATROL SKIFF (Fast nimble recon skiff - Sector 1) - 140x80
+    // =========================================================================
+    const skiffGfx = this.make.graphics({ x: 0, y: 0 }, false);
+    skiffGfx.setScale(s);
+
+    // Twin Micro-Ion Drive
+    skiffGfx.fillStyle(0x38bdf8, 0.3);
+    skiffGfx.fillCircle(124, 40, 16);
+    skiffGfx.fillStyle(0x38bdf8, 0.9);
+    skiffGfx.fillTriangle(138, 34, 120, 28, 120, 52);
+    skiffGfx.fillStyle(0xffffff, 0.95);
+    skiffGfx.fillTriangle(132, 38, 120, 35, 120, 45);
+
+    // Needle-nose patrol hull
+    skiffGfx.fillStyle(0x1e293b, 1);
+    skiffGfx.beginPath();
+    skiffGfx.moveTo(8, 40); // Sharp needle nose
+    skiffGfx.lineTo(58, 24);
+    skiffGfx.lineTo(122, 28);
+    skiffGfx.lineTo(122, 52);
+    skiffGfx.lineTo(58, 56);
+    skiffGfx.closePath();
+    skiffGfx.fillPath();
+    skiffGfx.lineStyle(2, 0x38bdf8, 1);
+    skiffGfx.strokePath();
+
+    // Twin swept radar fins
+    skiffGfx.lineStyle(2, 0x0284c7, 1);
+    skiffGfx.lineBetween(58, 24, 94, 12);
+    skiffGfx.lineBetween(58, 56, 94, 68);
+
+    // Sensor cockpit slit
+    skiffGfx.fillStyle(0xfde68a, 1);
+    skiffGfx.fillRect(44, 37, 18, 6);
+
+    skiffGfx.generateTexture('ship_enemy_skiff', 140 * s, 80 * s);
+    skiffGfx.destroy();
+
+    // =========================================================================
+    // 4. BROOKE IRONCLAD DREADNOUGHT (Massive Flagship - Sector 3) - 184x104
+    // =========================================================================
+    const dreadGfx = this.make.graphics({ x: 0, y: 0 }, false);
+    dreadGfx.setScale(s);
+
+    // Quad Heavy Ion Thrusters
+    dreadGfx.fillStyle(0xef4444, 0.25);
+    dreadGfx.fillCircle(162, 52, 26);
+    dreadGfx.fillStyle(0xf97316, 0.85);
+    dreadGfx.fillTriangle(182, 40, 154, 30, 154, 74);
+    dreadGfx.fillStyle(0xfef08a, 0.95);
+    dreadGfx.fillTriangle(174, 46, 154, 38, 154, 66);
+
+    // Heavy Ironclad Citadel Bulkhead
+    dreadGfx.fillStyle(0x0f172a, 1);
+    dreadGfx.fillRect(72, 22, 84, 60);
+    dreadGfx.lineStyle(2.5, 0xef4444, 1);
+    dreadGfx.strokeRect(72, 22, 84, 60);
+
+    // Massive Armored Ram Prow
+    dreadGfx.fillStyle(0x1e293b, 1);
+    dreadGfx.beginPath();
+    dreadGfx.moveTo(6, 52); // Heavy prow
+    dreadGfx.lineTo(72, 18);
+    dreadGfx.lineTo(156, 22);
+    dreadGfx.lineTo(156, 82);
+    dreadGfx.lineTo(72, 86);
+    dreadGfx.closePath();
+    dreadGfx.fillPath();
+    dreadGfx.lineStyle(2.5, 0xef4444, 1);
+    dreadGfx.strokePath();
+
+    // Twin Casemate Mortar Batteries
+    dreadGfx.fillStyle(0x7f1d1d, 1);
+    dreadGfx.fillRect(44, 28, 24, 10);
+    dreadGfx.fillRect(44, 66, 24, 10);
+    dreadGfx.lineStyle(2, 0xfacc15, 1);
+    dreadGfx.strokeRect(44, 28, 24, 10);
+    dreadGfx.strokeRect(44, 66, 24, 10);
+    // Cannons
+    dreadGfx.lineStyle(3, 0xffffff, 1);
+    dreadGfx.lineBetween(44, 33, 26, 33);
+    dreadGfx.lineBetween(44, 71, 26, 71);
+
+    // Command Tower Bridge
+    dreadGfx.fillStyle(0xfde68a, 1);
+    dreadGfx.fillRect(94, 44, 30, 16);
+    dreadGfx.lineStyle(1.5, 0xef4444, 1);
+    dreadGfx.strokeRect(94, 44, 30, 16);
+
+    dreadGfx.generateTexture('ship_enemy_dreadnought', 184 * s, 104 * s);
+    dreadGfx.destroy();
   }
 
   private generateCardIcons(): void {

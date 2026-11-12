@@ -1,9 +1,12 @@
 import {
   ACTIVE_CONTRACT_SEED,
   INITIAL_PLAYER_STATE,
-  createAllianceCutter,
+  SECTORS_DATA,
   createContrabandCards,
+  createEliteCard,
+  createEnemyForSector,
   createStarterCrewDeck,
+  getBlackMarketItemsForSector,
 } from '../data/seedData';
 import {
   Card,
@@ -15,41 +18,75 @@ import {
 export class CombatEngine {
   private state: CombatState;
   private readonly handSize = 4;
+  private eliteCardCounter = 1;
 
   constructor() {
-    this.state = this.createInitialState();
+    this.state = this.createInitialCampaignState();
     this.drawCards(this.handSize);
   }
 
-  private createInitialState(): CombatState {
+  private createInitialCampaignState(): CombatState {
     const crewDeck = createStarterCrewDeck();
     const contraband = createContrabandCards(ACTIVE_CONTRACT_SEED.contrabandCount);
-    const fullDeck = this.shuffle([...crewDeck, ...contraband]);
+    const masterDeck = [...crewDeck, ...contraband];
+    const initialSector = { ...SECTORS_DATA[0] };
+    const enemy = createEnemyForSector(1);
 
     return {
       turn: 1,
+      sector: initialSector,
+      isCampaignComplete: false,
       player: { ...INITIAL_PLAYER_STATE },
-      enemy: createAllianceCutter(),
+      enemy,
       contract: { ...ACTIVE_CONTRACT_SEED },
-      drawPile: fullDeck,
+      masterDeck: [...masterDeck],
+      drawPile: this.shuffle([...masterDeck]),
       hand: [],
       discardPile: [],
       exhaustPile: [],
-      lastLog: 'Alliance Rajah Cutter has locked onto your signature. Prepare for inspection!',
+      lastLog: `${enemy.name} has locked onto your signature in ${initialSector.name}. Prepare for inspection!`,
       outcome: 'ONGOING',
       creditsEarnedThisRun: 0,
+      availableMarketItems: getBlackMarketItemsForSector(1),
     };
   }
 
-  public resetEncounter(): CombatState {
-    this.state = this.createInitialState();
+  public resetCampaign(): CombatState {
+    this.state = this.createInitialCampaignState();
     this.drawCards(this.handSize);
     return this.getState();
+  }
+
+  // Alias for backward compatibility
+  public resetEncounter(): CombatState {
+    return this.resetCampaign();
+  }
+
+  public debugTriggerVictory(): void {
+    this.state.enemy.hull = 0;
+    this.state.outcome = 'VICTORY';
+    const isFinalSector = this.state.sector.number >= this.state.sector.maxSectors;
+    this.state.isCampaignComplete = isFinalSector;
+    if (isFinalSector) {
+      if (!this.state.contract.voided) {
+        this.state.creditsEarnedThisRun = this.state.contract.payout + 50;
+        this.state.player.credits += this.state.creditsEarnedThisRun;
+      } else {
+        this.state.creditsEarnedThisRun = 50;
+        this.state.player.credits += 50;
+      }
+      this.state.lastLog = `CAMPAIGN VICTORY! All 3 Sectors cleared!`;
+    } else {
+      const sectorSalvage = 35;
+      this.state.player.credits += sectorSalvage;
+      this.state.lastLog = `Sector ${this.state.sector.number} Cleared! Recovered +${sectorSalvage} Cr salvage.`;
+    }
   }
 
   public getState(): CombatState {
     return {
       ...this.state,
+      sector: { ...this.state.sector },
       player: { ...this.state.player },
       enemy: {
         ...this.state.enemy,
@@ -57,10 +94,12 @@ export class CombatEngine {
         currentIntent: { ...this.state.enemy.currentIntent },
       },
       contract: { ...this.state.contract },
+      masterDeck: [...this.state.masterDeck],
       drawPile: [...this.state.drawPile],
       hand: [...this.state.hand],
       discardPile: [...this.state.discardPile],
       exhaustPile: [...this.state.exhaustPile],
+      availableMarketItems: this.state.availableMarketItems.map((item) => ({ ...item })),
     };
   }
 
@@ -202,7 +241,7 @@ export class CombatEngine {
       logParts.push(`jammed ${this.state.enemy.currentIntent.name} (-${creditsSpent} Cr)`);
     }
 
-    // Check enemy defeat & onKillHeatDelta (Vera's Whisper)
+    // Check enemy defeat
     if (this.state.enemy.hull <= 0) {
       killedEnemy = true;
       if (card.onKillHeatDelta) {
@@ -212,15 +251,25 @@ export class CombatEngine {
         logParts.push(`Fatal shot cooled Heat by ${Math.abs(card.onKillHeatDelta)}%`);
       }
 
-      // Resolve Victory & Contract payout
       this.state.outcome = 'VICTORY';
-      if (!this.state.contract.voided) {
-        this.state.player.credits += this.state.contract.payout;
-        this.state.creditsEarnedThisRun = this.state.contract.payout;
-        logParts.push(`Cutter disabled! +${this.state.contract.payout} Cr contract payout!`);
+      const isFinalSector = this.state.sector.number >= this.state.sector.maxSectors;
+      this.state.isCampaignComplete = isFinalSector;
+
+      if (isFinalSector) {
+        if (!this.state.contract.voided) {
+          this.state.player.credits += this.state.contract.payout + 50;
+          this.state.creditsEarnedThisRun += this.state.contract.payout + 50;
+          logParts.push(`Dreadnought routed! +${this.state.contract.payout} Cr contract delivered + 50 Cr Boss Bounty!`);
+        } else {
+          this.state.player.credits += 50;
+          this.state.creditsEarnedThisRun += 50;
+          logParts.push('Dreadnought routed! +50 Cr Boss Bounty (Contract payout forfeited).');
+        }
       } else {
-        this.state.creditsEarnedThisRun = 0;
-        logParts.push('Cutter disabled! (Contract payout forfeited)');
+        const sectorBounty = 35;
+        this.state.player.credits += sectorBounty;
+        this.state.creditsEarnedThisRun += sectorBounty;
+        logParts.push(`${this.state.enemy.name} disabled! +${sectorBounty} Cr patrol salvage!`);
       }
     }
 
@@ -280,6 +329,12 @@ export class CombatEngine {
     this.state.hand.splice(index, 1);
     this.state.exhaustPile.push(card);
 
+    // Also remove from master deck so it stays vented across sector jumps
+    const masterIdx = this.state.masterDeck.findIndex((c) => c.instanceId === instanceId);
+    if (masterIdx !== -1) {
+      this.state.masterDeck.splice(masterIdx, 1);
+    }
+
     const contractVoidedNow = !this.state.contract.voided;
     this.state.contract.voided = true;
     this.state.contract.contrabandCount = Math.max(0, this.state.contract.contrabandCount - 1);
@@ -333,7 +388,7 @@ export class CombatEngine {
     // If contraband pushed Heat to 100%, immediate defeat!
     if (this.state.player.heat >= this.state.player.maxHeat) {
       this.state.outcome = 'DEFEAT_HEAT';
-      const msg = `${logSegments.join(' ')} Heat hit 100%! Alliance boarding clamps locked!`.trim();
+      const msg = `${logSegments.join(' ')} Heat hit 100%! Customs clamps locked onto your vessel!`.trim();
       this.state.lastLog = msg;
       return {
         contrabandCount: contrabandInHand.length,
@@ -351,16 +406,17 @@ export class CombatEngine {
 
     // 2. Execute Enemy Intent (unless cancelled by Fast Talk)
     if (executedIntent.cancelled) {
-      logSegments.push(`Cutter's ${executedIntent.name} was jammed by Fast Talk!`);
+      logSegments.push(`Cutter's ${executedIntent.name} was jammed by Bazaar Haggling!`);
     } else {
       switch (executedIntent.id) {
-        case 'CARGO_SCAN': {
+        case 'CARGO_SCAN':
+        case 'LOCKDOWN_SCAN': {
           enemyHeatAdded = executedIntent.value;
           this.state.player.heat = Math.min(
             this.state.player.maxHeat,
             this.state.player.heat + enemyHeatAdded
           );
-          logSegments.push(`Cutter Cargo Scan: +${enemyHeatAdded}% Heat!`);
+          logSegments.push(`${executedIntent.name}: +${enemyHeatAdded}% Heat!`);
           break;
         }
         case 'WARNING_SHOT':
@@ -382,7 +438,7 @@ export class CombatEngine {
         case 'REINFORCE_HULL': {
           enemyShieldGained = executedIntent.value;
           this.state.enemy.shield += enemyShieldGained;
-          logSegments.push(`Cutter Reinforced Hull (+${enemyShieldGained} Shield).`);
+          logSegments.push(`${this.state.enemy.name} Reinforced Hull (+${enemyShieldGained} Shield).`);
           break;
         }
       }
@@ -391,7 +447,7 @@ export class CombatEngine {
     // 3. Check Defeat conditions
     if (this.state.player.hull <= 0) {
       this.state.outcome = 'DEFEAT_HULL';
-      logSegments.push('Ship Hull breached!');
+      logSegments.push('Ship Hull breached in deep space!');
     } else if (this.state.player.heat >= this.state.player.maxHeat) {
       this.state.outcome = 'DEFEAT_HEAT';
       logSegments.push('Heat reached 100% — Boarded & Impounded!');
@@ -428,5 +484,102 @@ export class CombatEngine {
       outcome: this.state.outcome,
       logMessage,
     };
+  }
+
+  // =========================================================================
+  // WATERFRONT BLACK MARKET & SECTOR JUMP METHODS
+  // =========================================================================
+
+  public buyBlackMarketItem(itemId: string): { success: boolean; reason?: string; message: string } {
+    const itemIndex = this.state.availableMarketItems.findIndex((it) => it.id === itemId);
+    if (itemIndex === -1) {
+      return { success: false, reason: 'Item not available in this market.', message: 'Item not found.' };
+    }
+
+    const item = this.state.availableMarketItems[itemIndex];
+    if (this.state.player.credits < item.cost) {
+      return {
+        success: false,
+        reason: `Need ${item.cost} Credits (Have ${this.state.player.credits} Cr).`,
+        message: 'Insufficient Credits!',
+      };
+    }
+
+    // Deduct cost
+    this.state.player.credits -= item.cost;
+    let message = '';
+
+    switch (item.type) {
+      case 'repair': {
+        const prev = this.state.player.hull;
+        this.state.player.hull = Math.min(this.state.player.maxHull, this.state.player.hull + 10);
+        const gained = this.state.player.hull - prev;
+        message = `Repaired +${gained} Hull (-${item.cost} Cr).`;
+        break;
+      }
+      case 'cool': {
+        const prev = this.state.player.heat;
+        this.state.player.heat = Math.max(0, this.state.player.heat - 25);
+        const cooled = prev - this.state.player.heat;
+        message = `Cooled Heat by -${cooled}% (-${item.cost} Cr).`;
+        break;
+      }
+      case 'fuel': {
+        this.state.player.fuel += 2;
+        message = `Added +2 Fuel cells (-${item.cost} Cr).`;
+        break;
+      }
+      case 'card': {
+        if (item.cardTemplateId === 'terabai_bastion' || item.cardTemplateId === 'kenyalang_dive') {
+          const newCard = createEliteCard(item.cardTemplateId, this.eliteCardCounter++);
+          this.state.masterDeck.push(newCard);
+          message = `Recruited ${newCard.title} into your deck (-${item.cost} Cr)!`;
+        }
+        break;
+      }
+    }
+
+    // Remove purchased item from market
+    this.state.availableMarketItems.splice(itemIndex, 1);
+    this.state.lastLog = message;
+
+    return { success: true, message };
+  }
+
+  public advanceToNextSector(): { success: boolean; reason?: string } {
+    if (this.state.sector.number >= this.state.sector.maxSectors) {
+      return { success: false, reason: 'Already reached final sector!' };
+    }
+    if (this.state.player.fuel <= 0) {
+      return { success: false, reason: 'Out of Fuel! Cannot spool hyperdrive.' };
+    }
+
+    // Consume 1 Fuel for the jump
+    this.state.player.fuel -= 1;
+    const nextSectorNumber = this.state.sector.number + 1;
+    this.state.sector = { ...SECTORS_DATA[nextSectorNumber - 1] };
+    this.state.enemy = createEnemyForSector(nextSectorNumber);
+
+    // Refresh deck & piles for fresh sector combat
+    this.state.drawPile = this.shuffle([...this.state.masterDeck]);
+    this.state.hand = [];
+    this.state.discardPile = [];
+    this.state.exhaustPile = [];
+
+    // Reset turn stats
+    this.state.turn = 1;
+    this.state.player.ap = this.state.player.maxAp;
+    this.state.player.evasion = 0;
+    this.state.outcome = 'ONGOING';
+
+    // Market items for next sector
+    this.state.availableMarketItems = getBlackMarketItemsForSector(nextSectorNumber);
+
+    // Draw initial 4 cards
+    this.drawCards(this.handSize);
+
+    this.state.lastLog = `Jumped to Sector ${nextSectorNumber}: ${this.state.sector.name}! ${this.state.enemy.name} locked on!`;
+
+    return { success: true };
   }
 }

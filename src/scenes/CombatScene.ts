@@ -25,6 +25,7 @@ export class CombatScene extends Phaser.Scene {
   private starsNear!: Phaser.GameObjects.TileSprite;
 
   // Top HUD elements
+  private sectorHeaderTitleText!: Phaser.GameObjects.Text;
   private hullPillText!: Phaser.GameObjects.Text;
   private hullPillBg!: Phaser.GameObjects.Graphics;
   private fuelPillText!: Phaser.GameObjects.Text;
@@ -45,6 +46,7 @@ export class CombatScene extends Phaser.Scene {
 
   private enemyShipContainer!: Phaser.GameObjects.Container;
   private enemyShipSprite!: Phaser.GameObjects.Image;
+  private enemyNameLabel!: Phaser.GameObjects.Text;
   private enemyHullBarGfx!: Phaser.GameObjects.Graphics;
   private enemyHullText!: Phaser.GameObjects.Text;
   private enemyShieldBadge!: Phaser.GameObjects.Container;
@@ -95,6 +97,19 @@ export class CombatScene extends Phaser.Scene {
     this.createTopHud();
     this.createShipsAndIntentUI();
     this.createConsoleAndButtons();
+
+    (window as any).__combatEngine = this.engine;
+    (window as any).__combatScene = this;
+    if ((import.meta as any).env?.DEV) {
+      const killEnemy = () => {
+        this.engine.debugTriggerVictory();
+        this.refreshAllUI(true);
+      };
+      this.input.keyboard?.on('keydown-K', killEnemy);
+      window.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'k' || e.key === 'K') killEnemy();
+      });
+    }
 
     this.refreshAllUI(true);
   }
@@ -176,7 +191,7 @@ export class CombatScene extends Phaser.Scene {
     hudBg.lineBetween(0, 115, 450, 115);
 
     // Header title bar
-    this.addText(14, 8, 'RIMWARD RUN // SARAWAK CORRIDOR', {
+    this.sectorHeaderTitleText = this.addText(14, 8, 'RIMWARD RUN // SECTOR 1/3: SANTUBONG SHALLOWS', {
         fontFamily: 'Courier New, monospace',
         fontSize: '11px',
         fontStyle: 'bold',
@@ -319,16 +334,21 @@ export class CombatScene extends Phaser.Scene {
     // --- RIGHT: Alliance Customs Cutter ---
     this.enemyShipContainer = this.add.container(336, 298);
     this.enemyShipSprite = this.add.image(0, 0, 'ship_enemy').setScale(0.5);
+    this.enemyShipSprite.setInteractive({ useHandCursor: true });
+    this.enemyShipSprite.on('pointerdown', () => {
+      this.engine.debugTriggerVictory();
+      this.refreshAllUI(true);
+    });
     this.enemyShipContainer.add(this.enemyShipSprite);
 
-    const enemyNameLabel = this.addText(0, 46, 'ALLIANCE RAJAH CUTTER', {
+    this.enemyNameLabel = this.addText(0, 46, 'CUSTOMS PATROL SKIFF', {
         fontFamily: 'Courier New, monospace',
         fontSize: '10px',
         fontStyle: 'bold',
         color: '#38bdf8',
       })
       .setOrigin(0.5);
-    this.enemyShipContainer.add(enemyNameLabel);
+    this.enemyShipContainer.add(this.enemyNameLabel);
 
     // Enemy Hull Bar & Shield Badge
     this.enemyHullBarGfx = this.add.graphics();
@@ -599,6 +619,13 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private updateTopHud(state: CombatState): void {
+    // Sector header
+    if (this.sectorHeaderTitleText) {
+      this.sectorHeaderTitleText.setText(
+        `RIMWARD RUN // SECTOR ${state.sector.number}/${state.sector.maxSectors}: ${state.sector.name.toUpperCase()}`
+      );
+    }
+
     // Hull pill
     const hullRatio = state.player.hull / state.player.maxHull;
     const hullBorderColor = hullRatio > 0.5 ? 0xd97724 : hullRatio > 0.25 ? 0xeab308 : 0xef4444;
@@ -657,6 +684,14 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private updateShipsAndIntent(state: CombatState): void {
+    // Dynamic enemy ship texture & label
+    if (this.enemyShipSprite && state.enemy.spriteKey) {
+      this.enemyShipSprite.setTexture(state.enemy.spriteKey);
+    }
+    if (this.enemyNameLabel) {
+      this.enemyNameLabel.setText(state.enemy.name.toUpperCase());
+    }
+
     // Player Evasion & Hull label
     this.playerHullSubText.setText(`HULL: ${state.player.hull}/${state.player.maxHull}`);
     this.playerEvasionText.setText(`🛡️ EVASION: ${state.player.evasion}`);
@@ -1504,13 +1539,14 @@ export class CombatScene extends Phaser.Scene {
   }
 
   // =========================================================================
-  // 8. END-OF-ENCOUNTER MODAL OVERLAY (VICTORY / DEFEAT)
+  // 8. END-OF-ENCOUNTER & SECTOR MODALS (VICTORY, MARKET, DEFEAT)
   // =========================================================================
   private showOutcomeModal(state: CombatState): void {
     this.outcomeModalTimer = undefined;
     if (state.outcome === 'ONGOING') return;
     if (this.modalContainer) {
       this.modalContainer.destroy();
+      this.modalContainer = undefined;
     }
     this.setHandInteractive(false);
     this.sfx(state.outcome === 'VICTORY' ? 'win' : 'lose');
@@ -1518,98 +1554,356 @@ export class CombatScene extends Phaser.Scene {
     this.modalContainer = this.add.container(0, 0).setDepth(200);
 
     const backdrop = this.add
-      .rectangle(225, 400, 450, 800, 0x050811, 0.84)
+      .rectangle(225, 400, 450, 800, 0x050811, 0.88)
       .setInteractive();
     this.modalContainer.add(backdrop);
 
     const isVictory = state.outcome === 'VICTORY';
-    const borderCol = isVictory ? 0xeab308 : 0xef4444;
-    const headerTitle = isVictory
-      ? '★ BEJALAI TRIAL HONORED ★'
-      : state.outcome === 'DEFEAT_HEAT'
-      ? '🚨 BOARDED & IMPOUNDED (100% HEAT) 🚨'
-      : '💥 SHIP HULL BREACHED 💥';
+    if (isVictory && !state.isCampaignComplete) {
+      this.renderBlackMarketModal(state);
+    } else if (isVictory && state.isCampaignComplete) {
+      this.renderCampaignVictoryModal(state);
+    } else {
+      this.renderDefeatModal(state);
+    }
+  }
 
-    const subtitle = isVictory
-      ? 'Alliance Rajah Cutter evaded! Jump drive spooled for home longhouse!'
-      : state.outcome === 'DEFEAT_HEAT'
-      ? 'Alliance customs locked magnetic clamps onto your vessel.'
-      : 'Critical reactor failure in the Rimward sector.';
+  private renderBlackMarketModal(state: CombatState): void {
+    if (!this.modalContainer) return;
 
+    // Outpost panel background
     const panel = this.add.graphics();
-    panel.fillStyle(0x0f172a, 0.98);
-    panel.fillRoundedRect(32, 190, 386, 410, 14);
-    panel.lineStyle(3, borderCol, 1);
-    panel.strokeRoundedRect(32, 190, 386, 410, 14);
+    panel.fillStyle(0x0a1120, 0.98);
+    panel.fillRoundedRect(18, 55, 414, 690, 14);
+    panel.lineStyle(2.5, 0xeab308, 1);
+    panel.strokeRoundedRect(18, 55, 414, 690, 14);
     this.modalContainer.add(panel);
 
-    const titleText = this.addText(225, 236, headerTitle, {
-        fontFamily: 'Courier New, monospace',
-        fontSize: '15px',
-        fontStyle: 'bold',
-        color: isVictory ? '#fef08a' : '#fca5a5',
-        align: 'center',
-        wordWrap: { width: 350 },
-      })
-      .setOrigin(0.5);
+    const titleText = this.addText(225, 84, `★ SECTOR ${state.sector.number} CLEARED ★`, {
+      fontFamily: 'Courier New, monospace',
+      fontSize: '15px',
+      fontStyle: 'bold',
+      color: '#fef08a',
+      align: 'center',
+    }).setOrigin(0.5);
 
-    const subText = this.addText(225, 272, subtitle, {
+    const subText = this.addText(
+      225,
+      106,
+      `${state.sector.name.toUpperCase()} PATROL EVADED • WATERFRONT DOCK`,
+      {
         fontFamily: 'Courier New, monospace',
-        fontSize: '11.5px',
+        fontSize: '10.5px',
+        color: '#94a3b8',
+        align: 'center',
+      }
+    ).setOrigin(0.5);
+
+    this.modalContainer.add([titleText, subText]);
+
+    // Dynamic market content sub-container (redraws upon buying items)
+    const marketContent = this.add.container(0, 0);
+    this.modalContainer.add(marketContent);
+
+    const redrawMarketContent = () => {
+      marketContent.removeAll(true);
+      const s = this.engine.getState();
+
+      // Telemetry Bar at y = 124..156
+      const barGfx = this.add.graphics();
+      barGfx.fillStyle(0x1e293b, 0.95);
+      barGfx.fillRoundedRect(30, 124, 390, 32, 6);
+      barGfx.lineStyle(1.5, 0x475569, 1);
+      barGfx.strokeRoundedRect(30, 124, 390, 32, 6);
+      const teleText = this.addText(
+        225,
+        140,
+        `HULL ${s.player.hull}/${s.player.maxHull}  •  FUEL ${s.player.fuel}  •  CR ${s.player.credits}  •  HEAT ${s.player.heat}%`,
+        {
+          fontFamily: 'Courier New, monospace',
+          fontSize: '11px',
+          fontStyle: 'bold',
+          color: '#fde68a',
+        }
+      ).setOrigin(0.5);
+      marketContent.add([barGfx, teleText]);
+
+      // Market Section Banner at y = 172
+      const invHeader = this.addText(225, 172, '── WATERFRONT BLACK MARKET ──', {
+        fontFamily: 'Courier New, monospace',
+        fontSize: '11px',
+        fontStyle: 'bold',
+        color: '#d97724',
+      }).setOrigin(0.5);
+      marketContent.add(invHeader);
+
+      // Market Items
+      const items = s.availableMarketItems;
+      const startY = 194;
+      const rowHeight = 72;
+      const gap = 8;
+
+      items.forEach((item, idx) => {
+        const itemY = startY + idx * (rowHeight + gap);
+        const canAfford = s.player.credits >= item.cost;
+        const rowGfx = this.add.graphics();
+        rowGfx.fillStyle(0x131d31, 0.95);
+        rowGfx.fillRoundedRect(30, itemY, 390, rowHeight, 8);
+        rowGfx.lineStyle(1.5, canAfford ? 0x0284c7 : 0x334155, 1);
+        rowGfx.strokeRoundedRect(30, itemY, 390, rowHeight, 8);
+
+        let icon = '🔧';
+        if (item.type === 'cool') icon = '❄️';
+        else if (item.type === 'fuel') icon = '⛽';
+        else if (item.type === 'card') icon = '⭐';
+
+        const nameTxt = this.addText(42, itemY + 12, `${icon} ${item.name}`, {
+          fontFamily: 'Courier New, monospace',
+          fontSize: '12px',
+          fontStyle: 'bold',
+          color: '#fef08a',
+        });
+        const costTxt = this.addText(305, itemY + 12, `${item.cost} Cr`, {
+          fontFamily: 'Courier New, monospace',
+          fontSize: '11.5px',
+          fontStyle: 'bold',
+          color: canAfford ? '#facc15' : '#94a3b8',
+        });
+        const descTxt = this.addText(42, itemY + 34, item.description, {
+          fontFamily: 'Courier New, monospace',
+          fontSize: '10px',
+          color: '#cbd5e1',
+          wordWrap: { width: 250 },
+        });
+
+        // Buy Button
+        const btnGfx = this.add.graphics();
+        const btnX = 302;
+        const btnY = itemY + 34;
+        const btnW = 104;
+        const btnH = 28;
+        const drawBtn = (hover: boolean) => {
+          btnGfx.clear();
+          if (canAfford) {
+            btnGfx.fillStyle(hover ? 0xfacc15 : 0xd97724, 1);
+            btnGfx.fillRoundedRect(btnX, btnY, btnW, btnH, 6);
+            btnGfx.lineStyle(1.5, 0xfef08a, 1);
+            btnGfx.strokeRoundedRect(btnX, btnY, btnW, btnH, 6);
+          } else {
+            btnGfx.fillStyle(0x1e293b, 1);
+            btnGfx.fillRoundedRect(btnX, btnY, btnW, btnH, 6);
+            btnGfx.lineStyle(1.5, 0x475569, 1);
+            btnGfx.strokeRoundedRect(btnX, btnY, btnW, btnH, 6);
+          }
+        };
+        drawBtn(false);
+
+        const btnLabel = this.addText(
+          btnX + btnW / 2,
+          btnY + btnH / 2,
+          canAfford ? 'BUY ▶' : 'LOCKED',
+          {
+            fontFamily: 'Courier New, monospace',
+            fontSize: '11px',
+            fontStyle: 'bold',
+            color: canAfford ? '#0f172a' : '#64748b',
+          }
+        ).setOrigin(0.5);
+
+        const btnZone = this.add
+          .zone(btnX + btnW / 2, btnY + btnH / 2, btnW, btnH)
+          .setOrigin(0.5)
+          .setInteractive({ useHandCursor: canAfford });
+
+        if (canAfford) {
+          btnZone.on('pointerover', () => drawBtn(true));
+          btnZone.on('pointerout', () => drawBtn(false));
+          btnZone.on('pointerdown', () => {
+            const res = this.engine.buyBlackMarketItem(item.id);
+            if (res.success) {
+              this.sfx('play');
+              this.spawnFloatingText(225, itemY + 30, res.message, '#4ade80');
+              redrawMarketContent();
+            } else {
+              this.sfx('deny');
+              this.spawnFloatingText(225, itemY + 30, res.reason || 'Cannot buy', '#ef4444');
+            }
+          });
+        }
+
+        marketContent.add([rowGfx, nameTxt, costTxt, descTxt, btnGfx, btnLabel, btnZone]);
+      });
+
+      if (items.length === 0) {
+        const emptyTxt = this.addText(
+          225,
+          300,
+          '── All black market supplies purchased for this sector ──',
+          {
+            fontFamily: 'Courier New, monospace',
+            fontSize: '11px',
+            color: '#64748b',
+          }
+        ).setOrigin(0.5);
+        marketContent.add(emptyTxt);
+      }
+
+      // Bottom Jump Button at y = 664
+      const jumpBtnGfx = this.add.graphics();
+      const jumpW = 380;
+      const jumpH = 54;
+      const jumpX = 35;
+      const jumpY = 664;
+      const hasFuel = s.player.fuel > 0;
+      const nextSector = s.sector.number + 1;
+
+      const drawJumpBtn = (hover: boolean) => {
+        jumpBtnGfx.clear();
+        if (hasFuel) {
+          jumpBtnGfx.fillStyle(hover ? 0x0284c7 : 0x0369a1, 1);
+          jumpBtnGfx.fillRoundedRect(jumpX, jumpY, jumpW, jumpH, 10);
+          jumpBtnGfx.lineStyle(2.5, hover ? 0x7dd3fc : 0x38bdf8, 1);
+          jumpBtnGfx.strokeRoundedRect(jumpX, jumpY, jumpW, jumpH, 10);
+        } else {
+          jumpBtnGfx.fillStyle(0x334155, 1);
+          jumpBtnGfx.fillRoundedRect(jumpX, jumpY, jumpW, jumpH, 10);
+          jumpBtnGfx.lineStyle(2, 0xef4444, 1);
+          jumpBtnGfx.strokeRoundedRect(jumpX, jumpY, jumpW, jumpH, 10);
+        }
+      };
+      drawJumpBtn(false);
+
+      const jumpLabel = this.addText(
+        225,
+        jumpY + jumpH / 2,
+        hasFuel ? `JUMP TO SECTOR ${nextSector} (-1 FUEL) ▶` : '⚠️ OUT OF FUEL (REFUEL ABOVE)',
+        {
+          fontFamily: 'Courier New, monospace',
+          fontSize: '14px',
+          fontStyle: 'bold',
+          color: hasFuel ? '#f8fafc' : '#fca5a5',
+        }
+      ).setOrigin(0.5);
+
+      const jumpZone = this.add
+        .zone(225, jumpY + jumpH / 2, jumpW, jumpH)
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
+
+      jumpZone.on('pointerover', () => drawJumpBtn(true));
+      jumpZone.on('pointerout', () => drawJumpBtn(false));
+      jumpZone.on('pointerdown', () => {
+        if (!hasFuel) {
+          this.sfx('deny');
+          this.spawnFloatingText(225, jumpY - 15, '⚠️ OUT OF FUEL — PURCHASE FUEL FIRST!', '#ef4444');
+          return;
+        }
+        const advanceRes = this.engine.advanceToNextSector();
+        if (advanceRes.success) {
+          if (this.modalContainer) {
+            this.modalContainer.destroy();
+            this.modalContainer = undefined;
+          }
+          this.cancelPendingModal();
+          this.isResolvingTurn = false;
+          this.sfx('play');
+          this.cameras.main.flash(280, 56, 189, 248);
+          this.jolt(this.playerShipContainer, CombatScene.PLAYER_HOME_X, 0, 0);
+          this.jolt(this.enemyShipContainer, CombatScene.ENEMY_HOME_X, 0, 0);
+          this.refreshAllUI(true);
+        } else {
+          this.sfx('deny');
+          this.spawnFloatingText(225, jumpY - 15, advanceRes.reason || 'Cannot advance', '#ef4444');
+        }
+      });
+
+      marketContent.add([jumpBtnGfx, jumpLabel, jumpZone]);
+    };
+
+    redrawMarketContent();
+  }
+
+  private renderCampaignVictoryModal(state: CombatState): void {
+    if (!this.modalContainer) return;
+    const panel = this.add.graphics();
+    panel.fillStyle(0x0a1120, 0.98);
+    panel.fillRoundedRect(24, 130, 402, 530, 14);
+    panel.lineStyle(3, 0xeab308, 1);
+    panel.strokeRoundedRect(24, 130, 402, 530, 14);
+    this.modalContainer.add(panel);
+
+    const titleText = this.addText(225, 172, '👑 BEJALAI LEGEND ACHIEVED 👑', {
+      fontFamily: 'Courier New, monospace',
+      fontSize: '15.5px',
+      fontStyle: 'bold',
+      color: '#fef08a',
+      align: 'center',
+    }).setOrigin(0.5);
+
+    const subText = this.addText(
+      225,
+      204,
+      'Brooke Flagship dismantled! Sarawak Corridor liberated!',
+      {
+        fontFamily: 'Courier New, monospace',
+        fontSize: '11px',
         color: '#cbd5e1',
         align: 'center',
-        wordWrap: { width: 340 },
-      })
-      .setOrigin(0.5);
+        wordWrap: { width: 360 },
+      }
+    ).setOrigin(0.5);
 
-    const payoutStatus = isVictory
-      ? state.contract.voided
-        ? '0 Cr (Cargo Jettisoned)'
-        : `+${state.creditsEarnedThisRun} Cr (${state.contract.name})`
-      : '0 Cr (Run Failed)';
+    const payoutStatus = state.contract.voided
+      ? '0 Cr (Cargo Jettisoned)'
+      : `+${state.contract.payout} Cr (${state.contract.name})`;
 
     const statsBlock = [
-      `REMAINING HULL : ${state.player.hull} / ${state.player.maxHull}`,
-      `FINAL HEAT     : ${state.player.heat}% / ${state.player.maxHeat}%`,
-      `CONTRACT PAYOUT: ${payoutStatus}`,
-      `TOTAL CREDITS  : ${state.player.credits} Cr`,
-      `TURNS ELAPSED  : ${state.turn}`,
+      `EXPEDITION OUTCOME : ALL 3 SECTORS CONQUERED`,
+      `FINAL HULL         : ${state.player.hull} / ${state.player.maxHull}`,
+      `FINAL HEAT         : ${state.player.heat}% / ${state.player.maxHeat}%`,
+      `FUEL RESERVES      : ${state.player.fuel} Cells`,
+      `CONTRACT STATUS    : ${payoutStatus}`,
+      `TOTAL CREDITS      : ${state.player.credits} Cr`,
+      `TURNS IN RUN       : ${state.turn}`,
     ].join('\n\n');
 
-    const statsText = this.addText(64, 320, statsBlock, {
-        fontFamily: 'Courier New, monospace',
-        fontSize: '12.5px',
-        fontStyle: 'bold',
-        color: '#f8fafc',
-      })
-      .setOrigin(0, 0);
+    const statsBox = this.add.graphics();
+    statsBox.fillStyle(0x131d31, 0.95);
+    statsBox.fillRoundedRect(38, 236, 374, 280, 8);
+    statsBox.lineStyle(1.5, 0x475569, 1);
+    statsBox.strokeRoundedRect(38, 236, 374, 280, 8);
 
-    // Replay / Play Next Encounter Button
+    const statsText = this.addText(54, 252, statsBlock, {
+      fontFamily: 'Courier New, monospace',
+      fontSize: '11.5px',
+      fontStyle: 'bold',
+      color: '#f8fafc',
+    }).setOrigin(0, 0);
+
     const btnBg = this.add.graphics();
-    const drawReplayBtn = (hover: boolean) => {
+    const drawBtn = (hover: boolean) => {
       btnBg.clear();
       btnBg.fillStyle(hover ? 0xfacc15 : 0xd97724, 1);
-      btnBg.fillRoundedRect(75, 512, 300, 56, 10);
+      btnBg.fillRoundedRect(50, 546, 350, 56, 10);
       btnBg.lineStyle(2.5, 0xfef08a, 1);
-      btnBg.strokeRoundedRect(75, 512, 300, 56, 10);
+      btnBg.strokeRoundedRect(50, 546, 350, 56, 10);
     };
-    drawReplayBtn(false);
+    drawBtn(false);
 
-    const btnLabel = this.addText(225, 540, 'PLAY NEXT ENCOUNTER ↻', {
-        fontFamily: 'Courier New, monospace',
-        fontSize: '15px',
-        fontStyle: 'bold',
-        color: '#0f172a',
-      })
-      .setOrigin(0.5);
+    const btnLabel = this.addText(225, 574, 'START NEW BEJALAI EXPEDITION ↻', {
+      fontFamily: 'Courier New, monospace',
+      fontSize: '14px',
+      fontStyle: 'bold',
+      color: '#0f172a',
+    }).setOrigin(0.5);
 
     const btnZone = this.add
-      .zone(225, 540, 300, 56)
+      .zone(225, 574, 350, 56)
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
 
-    btnZone.on('pointerover', () => drawReplayBtn(true));
-    btnZone.on('pointerout', () => drawReplayBtn(false));
+    btnZone.on('pointerover', () => drawBtn(true));
+    btnZone.on('pointerout', () => drawBtn(false));
     btnZone.on('pointerdown', () => {
       if (this.modalContainer) {
         this.modalContainer.destroy();
@@ -1619,11 +1913,110 @@ export class CombatScene extends Phaser.Scene {
       this.isResolvingTurn = false;
       this.jolt(this.playerShipContainer, CombatScene.PLAYER_HOME_X, 0, 0);
       this.jolt(this.enemyShipContainer, CombatScene.ENEMY_HOME_X, 0, 0);
-      this.engine.resetEncounter();
+      this.engine.resetCampaign();
       this.refreshAllUI(true);
     });
 
-    this.modalContainer.add([titleText, subText, statsText, btnBg, btnLabel, btnZone]);
+    this.modalContainer.add([panel, titleText, subText, statsBox, statsText, btnBg, btnLabel, btnZone]);
+  }
+
+  private renderDefeatModal(state: CombatState): void {
+    if (!this.modalContainer) return;
+    const borderCol = 0xef4444;
+    const headerTitle =
+      state.outcome === 'DEFEAT_HEAT'
+        ? '🚨 IMPOUNDED BY CUSTOMS (100% HEAT) 🚨'
+        : '💥 FREIGHTER HULL DESTROYED 💥';
+
+    const subtitle =
+      state.outcome === 'DEFEAT_HEAT'
+        ? `Magnetic clamps secured in Sector ${state.sector.number}: ${state.sector.name}. Cargo impounded.`
+        : `Critical reactor breach in Sector ${state.sector.number}: ${state.sector.name}.`;
+
+    const panel = this.add.graphics();
+    panel.fillStyle(0x0a1120, 0.98);
+    panel.fillRoundedRect(24, 150, 402, 490, 14);
+    panel.lineStyle(3, borderCol, 1);
+    panel.strokeRoundedRect(24, 150, 402, 490, 14);
+    this.modalContainer.add(panel);
+
+    const titleText = this.addText(225, 194, headerTitle, {
+      fontFamily: 'Courier New, monospace',
+      fontSize: '14.5px',
+      fontStyle: 'bold',
+      color: '#fca5a5',
+      align: 'center',
+      wordWrap: { width: 360 },
+    }).setOrigin(0.5);
+
+    const subText = this.addText(225, 230, subtitle, {
+      fontFamily: 'Courier New, monospace',
+      fontSize: '11px',
+      color: '#cbd5e1',
+      align: 'center',
+      wordWrap: { width: 350 },
+    }).setOrigin(0.5);
+
+    const statsBlock = [
+      `SECTOR REACHED   : ${state.sector.number} / ${state.sector.maxSectors} (${state.sector.name})`,
+      `ENEMY OPPONENT   : ${state.enemy.name}`,
+      `REMAINING HULL   : ${state.player.hull} / ${state.player.maxHull}`,
+      `FINAL HEAT       : ${state.player.heat}% / ${state.player.maxHeat}%`,
+      `CREDITS RECOVERED: ${state.player.credits} Cr`,
+      `TURNS SURVIVED   : ${state.turn}`,
+    ].join('\n\n');
+
+    const statsBox = this.add.graphics();
+    statsBox.fillStyle(0x131d31, 0.95);
+    statsBox.fillRoundedRect(38, 260, 374, 240, 8);
+    statsBox.lineStyle(1.5, 0xef4444, 0.6);
+    statsBox.strokeRoundedRect(38, 260, 374, 240, 8);
+
+    const statsText = this.addText(54, 276, statsBlock, {
+      fontFamily: 'Courier New, monospace',
+      fontSize: '12px',
+      fontStyle: 'bold',
+      color: '#f8fafc',
+    }).setOrigin(0, 0);
+
+    const btnBg = this.add.graphics();
+    const drawBtn = (hover: boolean) => {
+      btnBg.clear();
+      btnBg.fillStyle(hover ? 0xf87171 : 0xd97724, 1);
+      btnBg.fillRoundedRect(50, 528, 350, 56, 10);
+      btnBg.lineStyle(2.5, 0xfca5a5, 1);
+      btnBg.strokeRoundedRect(50, 528, 350, 56, 10);
+    };
+    drawBtn(false);
+
+    const btnLabel = this.addText(225, 556, 'RETRY BEJALAI EXPEDITION ↻', {
+      fontFamily: 'Courier New, monospace',
+      fontSize: '14.5px',
+      fontStyle: 'bold',
+      color: '#0f172a',
+    }).setOrigin(0.5);
+
+    const btnZone = this.add
+      .zone(225, 556, 350, 56)
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    btnZone.on('pointerover', () => drawBtn(true));
+    btnZone.on('pointerout', () => drawBtn(false));
+    btnZone.on('pointerdown', () => {
+      if (this.modalContainer) {
+        this.modalContainer.destroy();
+        this.modalContainer = undefined;
+      }
+      this.cancelPendingModal();
+      this.isResolvingTurn = false;
+      this.jolt(this.playerShipContainer, CombatScene.PLAYER_HOME_X, 0, 0);
+      this.jolt(this.enemyShipContainer, CombatScene.ENEMY_HOME_X, 0, 0);
+      this.engine.resetCampaign();
+      this.refreshAllUI(true);
+    });
+
+    this.modalContainer.add([panel, titleText, subText, statsBox, statsText, btnBg, btnLabel, btnZone]);
   }
   private addText(
     x: number,

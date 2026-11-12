@@ -1,4 +1,12 @@
-import { Card, Contract, Enemy, EnemyIntent, GameState } from '../types/game';
+import {
+  BlackMarketItem,
+  Card,
+  Contract,
+  Enemy,
+  EnemyIntent,
+  GameState,
+  SectorInfo,
+} from '../types/game';
 
 export const INITIAL_PLAYER_STATE: GameState = {
   hull: 30,
@@ -21,50 +29,236 @@ export const ACTIVE_CONTRACT_SEED: Contract = {
   voided: false,
 };
 
-export const ENEMY_INTENT_POOL: EnemyIntent[] = [
+export const SECTORS_DATA: SectorInfo[] = [
   {
-    id: 'CARGO_SCAN',
-    name: 'Cargo Scan',
-    value: 15,
-    description: 'Customs scanners sweep cargo: +15% Heat',
-    badgeText: 'CARGO SCAN (+15% HEAT)',
+    number: 1,
+    maxSectors: 3,
+    name: 'Santubong Shallows',
+    subname: 'OUTER ATOLL PATROL CORRIDOR',
+    marketName: 'Kuching Waterfront Depot',
   },
   {
-    id: 'WARNING_SHOT',
-    name: 'Warning Shot',
-    value: 7,
-    description: 'Solid slug across prow: 7 DMG',
-    badgeText: 'WARNING SHOT (7 DMG)',
+    number: 2,
+    maxSectors: 3,
+    name: 'Pelagus Rapids',
+    subname: 'ASTEROID RIVER CHOKEPOINT',
+    marketName: 'Kapit River Outpost',
   },
   {
-    id: 'BROADSIDE',
-    name: 'Broadside',
-    value: 11,
-    description: 'Full naval cannon battery: 11 DMG',
-    badgeText: 'BROADSIDE (11 DMG)',
-  },
-  {
-    id: 'REINFORCE_HULL',
-    name: 'Reinforce Hull',
-    value: 8,
-    description: 'Armors prow bulkhead: +8 Shield',
-    badgeText: 'REINFORCE (+8 SHIELD)',
+    number: 3,
+    maxSectors: 3,
+    name: 'Bario Blockade',
+    subname: 'COLONIAL HIGHLAND GARRISON',
+    marketName: 'Bario Free Station',
   },
 ];
 
+export function createEnemyForSector(sectorNumber: number): Enemy {
+  switch (sectorNumber) {
+    case 1: {
+      const intents: EnemyIntent[] = [
+        {
+          id: 'CARGO_SCAN',
+          name: 'Cargo Scan',
+          value: 15,
+          description: 'Sensors sweep cargo hold: +15% Heat',
+          badgeText: 'CARGO SCAN (+15% HEAT)',
+          cancelled: false,
+        },
+        {
+          id: 'WARNING_SHOT',
+          name: 'Warning Shot',
+          value: 6,
+          description: 'Twin light laser pulse: 6 DMG',
+          badgeText: 'WARNING SHOT (6 DMG)',
+          cancelled: false,
+        },
+        {
+          id: 'REINFORCE_HULL',
+          name: 'Reinforce Hull',
+          value: 6,
+          description: 'Deploys light shield: +6 Shield',
+          badgeText: 'REINFORCE (+6 SHIELD)',
+          cancelled: false,
+        },
+        {
+          id: 'WARNING_SHOT',
+          name: 'Warning Shot',
+          value: 6,
+          description: 'Twin light laser pulse: 6 DMG',
+          badgeText: 'WARNING SHOT (6 DMG)',
+          cancelled: false,
+        },
+      ];
+      return {
+        id: 'enemy_patrol_skiff',
+        name: 'Customs Patrol Skiff',
+        subtitle: 'IAV-102 LIGHT RECON SKIFF',
+        spriteKey: 'ship_enemy_skiff',
+        hull: 36,
+        maxHull: 36,
+        shield: 0,
+        intents,
+        intentIndex: 0,
+        currentIntent: { ...intents[0] },
+      };
+    }
+    case 2: {
+      const intents: EnemyIntent[] = [
+        {
+          id: 'CARGO_SCAN',
+          name: 'Cargo Scan',
+          value: 15,
+          description: 'Customs scanners sweep cargo: +15% Heat',
+          badgeText: 'CARGO SCAN (+15% HEAT)',
+          cancelled: false,
+        },
+        {
+          id: 'WARNING_SHOT',
+          name: 'Warning Shot',
+          value: 7,
+          description: 'Solid slug across prow: 7 DMG',
+          badgeText: 'WARNING SHOT (7 DMG)',
+          cancelled: false,
+        },
+        {
+          id: 'BROADSIDE',
+          name: 'Broadside',
+          value: 11,
+          description: 'Full naval cannon battery: 11 DMG',
+          badgeText: 'BROADSIDE (11 DMG)',
+          cancelled: false,
+        },
+        {
+          id: 'REINFORCE_HULL',
+          name: 'Reinforce Hull',
+          value: 8,
+          description: 'Armors prow bulkhead: +8 Shield',
+          badgeText: 'REINFORCE (+8 SHIELD)',
+          cancelled: false,
+        },
+      ];
+      return {
+        id: 'enemy_alliance_customs_cutter',
+        name: 'Alliance Rajah Cutter',
+        subtitle: 'IAV-404 BORDER CRUISER',
+        spriteKey: 'ship_enemy_cutter',
+        hull: 48,
+        maxHull: 48,
+        shield: 0,
+        intents,
+        intentIndex: 0,
+        currentIntent: { ...intents[0] },
+      };
+    }
+    case 3:
+    default: {
+      const intents: EnemyIntent[] = [
+        {
+          id: 'LOCKDOWN_SCAN',
+          name: 'Lockdown Scan',
+          value: 20,
+          description: 'Imperial lockdown beam: +20% Heat',
+          badgeText: 'LOCKDOWN (+20% HEAT)',
+          cancelled: false,
+        },
+        {
+          id: 'BROADSIDE',
+          name: 'Twin Mortar Barrage',
+          value: 14,
+          description: 'Heavy casemate mortars: 14 DMG',
+          badgeText: 'MORTAR BARRAGE (14 DMG)',
+          cancelled: false,
+        },
+        {
+          id: 'REINFORCE_HULL',
+          name: 'Reinforce Ironclad',
+          value: 12,
+          description: 'Overcharges armored plating: +12 Shield',
+          badgeText: 'IRONCLAD WALL (+12 SHD)',
+          cancelled: false,
+        },
+        {
+          id: 'BROADSIDE',
+          name: 'Broadside Cannonade',
+          value: 12,
+          description: 'Full flagship broadside: 12 DMG',
+          badgeText: 'BROADSIDE (12 DMG)',
+          cancelled: false,
+        },
+      ];
+      return {
+        id: 'enemy_brooke_dreadnought',
+        name: 'Brooke Dreadnought',
+        subtitle: 'FLAGSHIP RAJAH-V DREADNOUGHT',
+        spriteKey: 'ship_enemy_dreadnought',
+        hull: 65,
+        maxHull: 65,
+        shield: 10,
+        intents,
+        intentIndex: 0,
+        currentIntent: { ...intents[0] },
+      };
+    }
+  }
+}
+
+// Backward-compatibility wrapper
 export function createAllianceCutter(): Enemy {
-  const intents = ENEMY_INTENT_POOL.map((intent) => ({ ...intent, cancelled: false }));
-  return {
-    id: 'enemy_alliance_customs_cutter',
-    name: 'Alliance Rajah Cutter',
-    subtitle: 'BORNEO SECTOR BORDER INTERCEPTOR',
-    hull: 48,
-    maxHull: 48,
-    shield: 0,
-    intents,
-    intentIndex: 0,
-    currentIntent: { ...intents[0] },
-  };
+  return createEnemyForSector(2);
+}
+
+export function getBlackMarketItemsForSector(sectorNumber: number): BlackMarketItem[] {
+  const baseItems: BlackMarketItem[] = [
+    {
+      id: 'repair_10',
+      name: 'Belian Hull Patch',
+      cost: 25,
+      description: 'Restore +10 Hull to ship.',
+      icon: '🔧',
+      type: 'repair',
+    },
+    {
+      id: 'cool_25',
+      name: 'Bribe Customs Dispatcher',
+      cost: 25,
+      description: 'Cool Heat signature by -25%.',
+      icon: '🧊',
+      type: 'cool',
+    },
+    {
+      id: 'fuel_2',
+      name: 'Refuel Hyperdrive Cell',
+      cost: 20,
+      description: 'Add +2 Fuel for future jumps.',
+      icon: '⛽',
+      type: 'fuel',
+    },
+  ];
+
+  if (sectorNumber === 1) {
+    baseItems.push({
+      id: 'card_terabai',
+      name: 'Recruit: Terabai Bastion',
+      cost: 40,
+      description: 'Pilot card: +9 Evasion & Draw 1 card.',
+      icon: '🛡️',
+      type: 'card',
+      cardTemplateId: 'terabai_bastion',
+    });
+  } else {
+    baseItems.push({
+      id: 'card_dive',
+      name: 'Recruit: Kenyalang Dive',
+      cost: 40,
+      description: 'Mercenary card: 12 DMG (Fatal: -10% Heat).',
+      icon: '🦅',
+      type: 'card',
+      cardTemplateId: 'kenyalang_dive',
+    });
+  }
+
+  return baseItems;
 }
 
 export function createStarterCrewDeck(): Card[] {
@@ -200,6 +394,34 @@ export function createStarterCrewDeck(): Card[] {
     ...card,
     instanceId: `crew_${card.templateId}_${index + 1}`,
   }));
+}
+
+export function createEliteCard(templateId: 'terabai_bastion' | 'kenyalang_dive', instanceIndex = 1): Card {
+  if (templateId === 'terabai_bastion') {
+    return {
+      instanceId: `elite_terabai_bastion_${instanceIndex}`,
+      templateId: 'terabai_bastion',
+      title: 'Terabai Bastion',
+      type: 'Pilot',
+      apCost: 1,
+      evasion: 9,
+      drawCards: 1,
+      description: 'Ancestral shield.\n+9 Evasion • Draw 1 card.',
+      iconKey: 'icon_terabai',
+    };
+  }
+
+  return {
+    instanceId: `elite_kenyalang_dive_${instanceIndex}`,
+    templateId: 'kenyalang_dive',
+    title: 'Kenyalang Dive',
+    type: 'Mercenary',
+    apCost: 2,
+    damage: 12,
+    onKillHeatDelta: -10,
+    description: 'Hornbill kinetic plunge.\n12 DMG. Fatal: -10% Heat.',
+    iconKey: 'icon_parang',
+  };
 }
 
 export function createContrabandCards(count = 2): Card[] {

@@ -8,7 +8,9 @@ export type CardTemplateId =
   | 'rattan_lashing'
   | 'haggling_bazaar'
   | 'sarikei_black_gold'
-  // Legacy aliases for backward compatibility if needed
+  | 'terabai_bastion'
+  | 'kenyalang_dive'
+  // Legacy aliases
   | 'quick_draw'
   | 'veras_whisper'
   | 'evasive_burn'
@@ -36,7 +38,7 @@ export interface Card {
   iconKey: string;
 }
 
-export type EnemyIntentType = 'CARGO_SCAN' | 'WARNING_SHOT' | 'BROADSIDE' | 'REINFORCE_HULL';
+export type EnemyIntentType = 'CARGO_SCAN' | 'WARNING_SHOT' | 'BROADSIDE' | 'REINFORCE_HULL' | 'LOCKDOWN_SCAN';
 
 export interface EnemyIntent {
   id: EnemyIntentType;
@@ -51,6 +53,7 @@ export interface Enemy {
   id: string;
   name: string;
   subtitle: string;
+  spriteKey: string;
   hull: number;
   maxHull: number;
   shield: number;
@@ -80,13 +83,34 @@ export interface GameState {
   maxAp: number;
 }
 
+export interface SectorInfo {
+  number: number;
+  maxSectors: number;
+  name: string;
+  subname: string;
+  marketName: string;
+}
+
+export interface BlackMarketItem {
+  id: string;
+  name: string;
+  cost: number;
+  description: string;
+  icon: string;
+  type: 'repair' | 'cool' | 'fuel' | 'card';
+  cardTemplateId?: CardTemplateId;
+}
+
 export type CombatOutcome = 'ONGOING' | 'VICTORY' | 'DEFEAT_HULL' | 'DEFEAT_HEAT';
 
 export interface CombatState {
   turn: number;
+  sector: SectorInfo;
+  isCampaignComplete: boolean;
   player: GameState;
   enemy: Enemy;
   contract: Contract;
+  masterDeck: Card[];
   drawPile: Card[];
   hand: Card[];
   discardPile: Card[];
@@ -94,6 +118,7 @@ export interface CombatState {
   lastLog: string;
   outcome: CombatOutcome;
   creditsEarnedThisRun: number;
+  availableMarketItems: BlackMarketItem[];
 }
 
 export interface PlayCardResult {
