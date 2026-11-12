@@ -86,6 +86,15 @@ export class CombatScene extends Phaser.Scene {
   private enemyShieldAura!: Phaser.GameObjects.Graphics;
   private currentEnemySector = 0;
 
+  // Ship Visual Subsystems & Dynamic States
+  private playerRadiatorGlowGfx!: Phaser.GameObjects.Graphics;
+  private playerStrobesGfx!: Phaser.GameObjects.Graphics;
+  private enemyStrobesGfx!: Phaser.GameObjects.Graphics;
+  private playerDamageSmokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private playerDamageSparkEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private enemyDamageSmokeEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private enemyDamageSparkEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+
   private endTurnContainer!: Phaser.GameObjects.Container;
   private endTurnBg!: Phaser.GameObjects.Graphics;
   private endTurnText!: Phaser.GameObjects.Text;
@@ -137,7 +146,7 @@ export class CombatScene extends Phaser.Scene {
     // Synchronize player plasma thruster emitter position
     if (this.playerThrusterEmitter && this.playerShipContainer && this.playerShipSprite) {
       this.playerThrusterEmitter.setPosition(
-        this.playerShipContainer.x - 38,
+        this.playerShipContainer.x - 42,
         this.playerShipContainer.y + this.playerShipSprite.y
       );
     }
@@ -145,9 +154,34 @@ export class CombatScene extends Phaser.Scene {
     // Synchronize enemy ion thruster emitter position
     if (this.enemyThrusterEmitter && this.enemyShipContainer && this.enemyShipSprite) {
       const state = this.engine ? this.engine.getState() : undefined;
-      const xOffset = state?.sector.number === 3 ? 36 : (state?.sector.number === 2 ? 32 : 27);
+      const xOffset = state?.sector.number === 3 ? 64 : (state?.sector.number === 2 ? 40 : 28);
       this.enemyThrusterEmitter.setPosition(
         this.enemyShipContainer.x + xOffset,
+        this.enemyShipContainer.y + this.enemyShipSprite.y
+      );
+    }
+
+    // Synchronize dynamic battle damage emitters
+    if (this.playerDamageSparkEmitter && this.playerShipContainer && this.playerShipSprite) {
+      this.playerDamageSparkEmitter.setPosition(
+        this.playerShipContainer.x - 14,
+        this.playerShipContainer.y + this.playerShipSprite.y
+      );
+      this.playerDamageSmokeEmitter.setPosition(
+        this.playerShipContainer.x - 24,
+        this.playerShipContainer.y + this.playerShipSprite.y
+      );
+    }
+
+    if (this.enemyDamageSparkEmitter && this.enemyShipContainer && this.enemyShipSprite) {
+      const state = this.engine ? this.engine.getState() : undefined;
+      const dmgX = state?.sector.number === 3 ? 12 : 6;
+      this.enemyDamageSparkEmitter.setPosition(
+        this.enemyShipContainer.x + dmgX,
+        this.enemyShipContainer.y + this.enemyShipSprite.y
+      );
+      this.enemyDamageSmokeEmitter.setPosition(
+        this.enemyShipContainer.x + dmgX + 12,
         this.enemyShipContainer.y + this.enemyShipSprite.y
       );
     }
@@ -324,8 +358,31 @@ export class CombatScene extends Phaser.Scene {
     this.playerShipContainer.add(this.playerShieldAura);
 
     // Subtle engine hover tween
-    this.playerShipSprite = this.add.image(0, 0, 'ship_player').setScale(0.5);
+    this.playerShipSprite = this.add.image(0, 0, 'ship_player').setScale(0.52);
     this.playerShipContainer.add(this.playerShipSprite);
+
+    // Heat-Reactive Radiator Glow Overlay (SS Kenyalang-IV)
+    this.playerRadiatorGlowGfx = this.add.graphics();
+    this.playerShipContainer.add(this.playerRadiatorGlowGfx);
+
+    // Blinking Navigation Strobes (SS Kenyalang-IV)
+    this.playerStrobesGfx = this.add.graphics();
+    this.playerStrobesGfx.fillStyle(0x22c55e, 1); // Starboard Green (Dorsal)
+    this.playerStrobesGfx.fillCircle(-18, -19, 2.4);
+    this.playerStrobesGfx.fillStyle(0xef4444, 1); // Port Red (Ventral)
+    this.playerStrobesGfx.fillCircle(-22, 11, 2.4);
+    this.playerStrobesGfx.fillStyle(0xfde68a, 1); // Hornbill Casque Tip Gold Strobe
+    this.playerStrobesGfx.fillCircle(31, -13, 2.5);
+    this.playerShipContainer.add(this.playerStrobesGfx);
+
+    this.tweens.add({
+      targets: this.playerStrobesGfx,
+      alpha: { from: 0.15, to: 1.0 },
+      duration: 650,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
 
     const playerLabel = this.addText(0, 52, 'SS KENYALANG-IV (BEJALAI RUNNER)', {
         fontFamily: 'Courier New, monospace',
@@ -397,13 +454,26 @@ export class CombatScene extends Phaser.Scene {
     this.enemyShieldAura = this.add.graphics();
     this.enemyShipContainer.add(this.enemyShieldAura);
 
-    this.enemyShipSprite = this.add.image(0, 0, 'ship_enemy').setScale(0.5);
+    this.enemyShipSprite = this.add.image(0, 0, 'ship_enemy').setScale(0.42);
     this.enemyShipSprite.setInteractive({ useHandCursor: true });
     this.enemyShipSprite.on('pointerdown', () => {
       this.engine.debugTriggerVictory();
       this.refreshAllUI(true);
     });
     this.enemyShipContainer.add(this.enemyShipSprite);
+
+    // Blinking Enemy Navigation Strobes
+    this.enemyStrobesGfx = this.add.graphics();
+    this.enemyShipContainer.add(this.enemyStrobesGfx);
+
+    this.tweens.add({
+      targets: this.enemyStrobesGfx,
+      alpha: { from: 0.2, to: 1.0 },
+      duration: 720,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
 
     this.enemyNameLabel = this.addText(0, 46, 'CUSTOMS PATROL SKIFF', {
         fontFamily: 'Courier New, monospace',
@@ -488,6 +558,51 @@ export class CombatScene extends Phaser.Scene {
 
     // Initialize Enemy Thruster Emitter for Sector 1
     this.initEnemyThruster(1);
+
+    // Battle Damage Particle Emitters
+    this.playerDamageSparkEmitter = this.add.particles(0, 0, 'fx_spark', {
+      speed: { min: 40, max: 120 },
+      scale: { start: 0.85, end: 0 },
+      alpha: { start: 1, end: 0 },
+      tint: [0xffffff, 0xfde68a, 0xf59e0b],
+      lifespan: { min: 200, max: 400 },
+      blendMode: 'ADD',
+      emitting: false,
+      frequency: 380,
+    }).setDepth(19);
+
+    this.playerDamageSmokeEmitter = this.add.particles(0, 0, 'fx_smoke', {
+      speedX: { min: -35, max: -15 },
+      speedY: { min: -8, max: 8 },
+      scale: { start: 0.5, end: 1.4 },
+      alpha: { start: 0.55, end: 0 },
+      tint: 0x1e293b,
+      lifespan: { min: 600, max: 1100 },
+      emitting: false,
+      frequency: 240,
+    }).setDepth(17);
+
+    this.enemyDamageSparkEmitter = this.add.particles(0, 0, 'fx_spark', {
+      speed: { min: 40, max: 120 },
+      scale: { start: 0.85, end: 0 },
+      alpha: { start: 1, end: 0 },
+      tint: [0xffffff, 0xbae6fd, 0x38bdf8],
+      lifespan: { min: 200, max: 400 },
+      blendMode: 'ADD',
+      emitting: false,
+      frequency: 380,
+    }).setDepth(19);
+
+    this.enemyDamageSmokeEmitter = this.add.particles(0, 0, 'fx_smoke', {
+      speedX: { min: 15, max: 35 },
+      speedY: { min: -8, max: 8 },
+      scale: { start: 0.5, end: 1.4 },
+      alpha: { start: 0.55, end: 0 },
+      tint: 0x0f172a,
+      lifespan: { min: 600, max: 1100 },
+      emitting: false,
+      frequency: 240,
+    }).setDepth(17);
 
     // --- Prominent Enemy Intent Callout Box above Cutter (x = 315, y = 172) ---
     this.intentBoxContainer = this.add.container(312, 172);
@@ -898,12 +1013,57 @@ export class CombatScene extends Phaser.Scene {
     // Update live shield auras
     this.drawShieldAuras(state);
 
-    // Dynamic enemy ship texture & label
+    // Dynamic enemy ship texture & hierarchical diorama scaling
     if (this.enemyShipSprite && state.enemy.spriteKey) {
       this.enemyShipSprite.setTexture(state.enemy.spriteKey);
+      if (state.sector.number === 3) {
+        this.enemyShipSprite.setScale(0.70);
+        this.enemyNameLabel.setY(56);
+        this.enemyHullText.setY(72);
+        this.enemyShieldBadge.setY(96);
+      } else if (state.sector.number === 2) {
+        this.enemyShipSprite.setScale(0.54);
+        this.enemyNameLabel.setY(48);
+        this.enemyHullText.setY(66);
+        this.enemyShieldBadge.setY(90);
+      } else {
+        this.enemyShipSprite.setScale(0.42);
+        this.enemyNameLabel.setY(44);
+        this.enemyHullText.setY(64);
+        this.enemyShieldBadge.setY(88);
+      }
     }
     if (this.enemyNameLabel) {
       this.enemyNameLabel.setText(state.enemy.name.toUpperCase());
+    }
+
+    // Update enemy navigation strobes
+    this.updateEnemyStrobes(state.sector.number);
+
+    // Update player thermal radiator vents on SS Kenyalang-IV
+    this.updatePlayerRadiatorGlow(state.player.heat);
+
+    // Dynamic Battle Damage States (Hull <= 50% sparks, Hull <= 25% smoke)
+    const playerLowHull = state.player.hull <= state.player.maxHull * 0.5;
+    const playerCritHull = state.player.hull <= state.player.maxHull * 0.25;
+    if (this.playerDamageSparkEmitter) {
+      if (playerLowHull && !this.playerDamageSparkEmitter.emitting) this.playerDamageSparkEmitter.start();
+      else if (!playerLowHull && this.playerDamageSparkEmitter.emitting) this.playerDamageSparkEmitter.stop();
+    }
+    if (this.playerDamageSmokeEmitter) {
+      if (playerCritHull && !this.playerDamageSmokeEmitter.emitting) this.playerDamageSmokeEmitter.start();
+      else if (!playerCritHull && this.playerDamageSmokeEmitter.emitting) this.playerDamageSmokeEmitter.stop();
+    }
+
+    const enemyLowHull = state.enemy.hull <= state.enemy.maxHull * 0.5;
+    const enemyCritHull = state.enemy.hull <= state.enemy.maxHull * 0.25;
+    if (this.enemyDamageSparkEmitter) {
+      if (enemyLowHull && !this.enemyDamageSparkEmitter.emitting) this.enemyDamageSparkEmitter.start();
+      else if (!enemyLowHull && this.enemyDamageSparkEmitter.emitting) this.enemyDamageSparkEmitter.stop();
+    }
+    if (this.enemyDamageSmokeEmitter) {
+      if (enemyCritHull && !this.enemyDamageSmokeEmitter.emitting) this.enemyDamageSmokeEmitter.start();
+      else if (!enemyCritHull && this.enemyDamageSmokeEmitter.emitting) this.enemyDamageSmokeEmitter.stop();
     }
 
     // Player Evasion & Hull label
@@ -916,7 +1076,7 @@ export class CombatScene extends Phaser.Scene {
     const barW = 132;
     const barH = 12;
     const barX = -barW / 2;
-    const barY = 60;
+    const barY = state.sector.number === 3 ? 66 : state.sector.number === 2 ? 60 : 58;
     this.enemyHullBarGfx.fillStyle(0x0f172a, 0.95);
     this.enemyHullBarGfx.fillRoundedRect(barX, barY, barW, barH, 4);
 
@@ -976,6 +1136,78 @@ export class CombatScene extends Phaser.Scene {
       this.intentTitleText.setColor(titleCol);
       this.intentSubText.setText(intent.description);
       this.intentSubText.setColor('#e2e8f0');
+    }
+  }
+
+  private updateEnemyStrobes(sectorNumber: number): void {
+    if (!this.enemyStrobesGfx) return;
+    this.enemyStrobesGfx.clear();
+    if (sectorNumber === 3) {
+      // Sector 3 Dreadnought (scale 0.70): Heavy imperial crimson citadel beacons
+      this.enemyStrobesGfx.fillStyle(0xef4444, 1);
+      this.enemyStrobesGfx.fillCircle(19, -27, 2.8); // Masthead beacon 1
+      this.enemyStrobesGfx.fillCircle(8, -23, 2.4);  // Masthead beacon 2
+      this.enemyStrobesGfx.fillCircle(55, -20, 2.2); // Stern beacon
+      this.enemyStrobesGfx.fillCircle(55, 20, 2.2);
+      // Prow crushing ram warning beacon
+      this.enemyStrobesGfx.fillStyle(0xfacc15, 1);
+      this.enemyStrobesGfx.fillCircle(-70, 0, 2.5);
+    } else if (sectorNumber === 2) {
+      // Sector 2 Cutter (scale 0.54): Colonial naval azure & crimson strobes
+      this.enemyStrobesGfx.fillStyle(0x38bdf8, 1);
+      this.enemyStrobesGfx.fillCircle(27, -19, 2.2); // Dorsal fin beacon
+      this.enemyStrobesGfx.fillStyle(0xef4444, 1);
+      this.enemyStrobesGfx.fillCircle(27, 19, 2.2);  // Ventral fin beacon
+      this.enemyStrobesGfx.fillStyle(0x7dd3fc, 1);
+      this.enemyStrobesGfx.fillCircle(-30, -0.5, 2); // Optical targeting pod
+    } else {
+      // Sector 1 Skiff (scale 0.42): Fast interceptor cyan strobes & red needle probe
+      this.enemyStrobesGfx.fillStyle(0x38bdf8, 1);
+      this.enemyStrobesGfx.fillCircle(13, -13, 2);   // Dorsal radar wing
+      this.enemyStrobesGfx.fillCircle(13, 13, 2);    // Ventral radar wing
+      this.enemyStrobesGfx.fillStyle(0xef4444, 1);
+      this.enemyStrobesGfx.fillCircle(-30, 0, 2.2);  // Forward needle optic
+    }
+  }
+
+  private updatePlayerRadiatorGlow(heat: number): void {
+    if (!this.playerRadiatorGlowGfx) return;
+    this.playerRadiatorGlowGfx.clear();
+    if (heat <= 25) {
+      // Normal operating temp: vents stay cool dark graphite
+      return;
+    }
+
+    const rx = -29;
+    const ry = -7;
+    const rw = 12;
+
+    if (heat >= 80) {
+      // Critical thermal emergency (80-100% heat): blistering red-white thermal radiance
+      this.playerRadiatorGlowGfx.fillStyle(0xef4444, 0.45);
+      this.playerRadiatorGlowGfx.fillCircle(rx + rw / 2, 0, 18);
+      this.playerRadiatorGlowGfx.fillStyle(0xf97316, 0.85);
+      for (let vy = ry; vy <= 7; vy += 3.5) {
+        this.playerRadiatorGlowGfx.fillRoundedRect(rx, vy, rw, 2.5, 1);
+      }
+      this.playerRadiatorGlowGfx.fillStyle(0xffffff, 0.95);
+      for (let vy = ry; vy <= 7; vy += 3.5) {
+        this.playerRadiatorGlowGfx.fillRoundedRect(rx + 2, vy + 0.5, rw - 4, 1.2, 0.5);
+      }
+    } else if (heat >= 50) {
+      // High heat (50-79% heat): fiery warm amber/turmeric radiance
+      this.playerRadiatorGlowGfx.fillStyle(0xf59e0b, 0.28);
+      this.playerRadiatorGlowGfx.fillCircle(rx + rw / 2, 0, 14);
+      this.playerRadiatorGlowGfx.fillStyle(0xfbbf24, 0.8);
+      for (let vy = ry; vy <= 7; vy += 3.5) {
+        this.playerRadiatorGlowGfx.fillRoundedRect(rx, vy, rw, 2.2, 1);
+      }
+    } else {
+      // Moderate heat (26-49% heat): warm dull amber filaments
+      this.playerRadiatorGlowGfx.fillStyle(0xd97724, 0.55);
+      for (let vy = ry; vy <= 7; vy += 3.5) {
+        this.playerRadiatorGlowGfx.fillRoundedRect(rx, vy, rw, 1.8, 0.5);
+      }
     }
   }
 
@@ -2505,6 +2737,8 @@ export class CombatScene extends Phaser.Scene {
           this.cameras.main.flash(280, 56, 189, 248);
           this.jolt(this.playerShipContainer, CombatScene.PLAYER_HOME_X, 0, 0);
           this.jolt(this.enemyShipContainer, CombatScene.ENEMY_HOME_X, 0, 0);
+          this.enemyDamageSparkEmitter?.stop();
+          this.enemyDamageSmokeEmitter?.stop();
           this.refreshAllUI(true);
         } else {
           this.sfx('deny');
@@ -2608,6 +2842,10 @@ export class CombatScene extends Phaser.Scene {
       this.isResolvingTurn = false;
       this.jolt(this.playerShipContainer, CombatScene.PLAYER_HOME_X, 0, 0);
       this.jolt(this.enemyShipContainer, CombatScene.ENEMY_HOME_X, 0, 0);
+      this.playerDamageSparkEmitter?.stop();
+      this.playerDamageSmokeEmitter?.stop();
+      this.enemyDamageSparkEmitter?.stop();
+      this.enemyDamageSmokeEmitter?.stop();
       this.engine.resetCampaign();
       this.refreshAllUI(true);
     });
@@ -2707,6 +2945,10 @@ export class CombatScene extends Phaser.Scene {
       this.isResolvingTurn = false;
       this.jolt(this.playerShipContainer, CombatScene.PLAYER_HOME_X, 0, 0);
       this.jolt(this.enemyShipContainer, CombatScene.ENEMY_HOME_X, 0, 0);
+      this.playerDamageSparkEmitter?.stop();
+      this.playerDamageSmokeEmitter?.stop();
+      this.enemyDamageSparkEmitter?.stop();
+      this.enemyDamageSmokeEmitter?.stop();
       this.engine.resetCampaign();
       this.refreshAllUI(true);
     });

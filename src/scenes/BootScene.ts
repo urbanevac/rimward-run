@@ -65,234 +65,626 @@ export class BootScene extends Phaser.Scene {
     const s = BootScene.TEXTURE_SCALE;
 
     // =========================================================================
-    // 1. SS KENYALANG-IV (Hornbill Prow / Dayak War Prahu Smuggler) - 160x96
+    // 1. SS KENYALANG-IV (Hornbill Prow / Dayak War Prahu Smuggler) - 168x100
     // =========================================================================
     const pGfx = this.make.graphics({ x: 0, y: 0 }, false);
     pGfx.setScale(s);
 
-    // Twin Aft Thruster Flares (Amber / Turmeric Plasma)
-    pGfx.fillStyle(0xe09f3e, 0.3);
-    pGfx.fillCircle(18, 48, 22);
+    // --- Dynamic Lighting Setup: Simulated Top-Left Sun Highlight ---
+    // Deep Under-Hull Ambient Drop Shadow
+    pGfx.fillStyle(0x0a0604, 0.45);
+    pGfx.fillEllipse(84, 58, 126, 36);
+
+    // Twin Aft Thruster Flares (Amber / Turmeric Plasma Cone Base)
+    pGfx.fillStyle(0xe09f3e, 0.28);
+    pGfx.fillCircle(18, 50, 24);
     pGfx.fillStyle(0xf59e0b, 0.85);
-    pGfx.fillTriangle(2, 42, 24, 34, 24, 62);
+    pGfx.fillTriangle(2, 44, 26, 34, 26, 66);
     pGfx.fillStyle(0xfef08a, 0.95);
-    pGfx.fillTriangle(8, 46, 24, 40, 24, 56);
+    pGfx.fillTriangle(8, 48, 26, 42, 26, 58);
 
-    // Belian Ironwood Rear Engine Block
-    pGfx.fillStyle(0x3b2a20, 1);
-    pGfx.fillRoundedRect(22, 32, 42, 32, 5);
-    pGfx.lineStyle(2, 0xe09f3e, 0.9);
-    pGfx.strokeRoundedRect(22, 32, 42, 32, 5);
+    // --- Outrigger Stabilizer Nacelles (Sarawakian River Prahu Sponsons) ---
+    // Lower Prahu Sponson & Articulated Titanium Struts
+    pGfx.fillStyle(0x1e293b, 1);
+    pGfx.fillRect(52, 64, 8, 12);
+    pGfx.fillRect(86, 64, 8, 12);
+    // Lower Sponson Body (Dark Oiled Belian Ironwood)
+    pGfx.fillStyle(0x1c120c, 1);
+    pGfx.fillRoundedRect(42, 72, 58, 14, 5);
+    pGfx.fillStyle(0x382318, 1);
+    pGfx.fillRoundedRect(44, 73, 54, 7, 3); // Top highlight
+    pGfx.lineStyle(1.5, 0xd97724, 0.9);
+    pGfx.strokeRoundedRect(42, 72, 58, 14, 5);
+    // Outrigger maneuvering RCS cold-gas jet
+    pGfx.fillStyle(0x38bdf8, 0.95);
+    pGfx.fillCircle(42, 79, 3);
+    pGfx.fillStyle(0xffffff, 1);
+    pGfx.fillCircle(42, 79, 1.5);
 
-    // Midship Cargo Hold (Decorated with Pua Kumbu diamond chevron plating)
-    pGfx.fillStyle(0x9e2a2b, 0.95);
-    pGfx.fillRect(58, 36, 46, 24);
-    pGfx.fillStyle(0xc85a32, 1);
-    pGfx.fillRect(66, 40, 30, 16);
-    pGfx.lineStyle(1.5, 0xfde68a, 0.85);
-    pGfx.strokeRect(66, 40, 30, 16);
+    // Upper Dorsal Stabilizer Fin
+    pGfx.fillStyle(0x1e293b, 1);
+    pGfx.fillRect(56, 22, 6, 12);
+    pGfx.fillStyle(0x2e1a12, 1);
+    pGfx.fillRoundedRect(50, 14, 46, 12, 4);
+    pGfx.lineStyle(1.5, 0xe09f3e, 0.85);
+    pGfx.strokeRoundedRect(50, 14, 46, 12, 4);
 
-    // Outrigger Stabilizer Nacelles (River Prahu outriggers)
-    pGfx.fillStyle(0x271e18, 1);
-    pGfx.fillRoundedRect(48, 54, 46, 16, 4);
-    pGfx.lineStyle(1.5, 0xe09f3e, 1);
-    pGfx.strokeRoundedRect(48, 54, 46, 16, 4);
-    // Outrigger plasma nozzle
-    pGfx.fillStyle(0xf59e0b, 0.9);
-    pGfx.fillCircle(48, 62, 4);
+    // --- Heavy Belian Ironwood Rear Engine Block (x: 24..66, y: 32..68) ---
+    // Deep structural chassis base
+    pGfx.fillStyle(0x1a0f0a, 1);
+    pGfx.fillRoundedRect(22, 30, 46, 40, 6);
+    // Oiled Belian woodgrain gradient layers
+    pGfx.fillStyle(0x2f1b12, 1);
+    pGfx.fillRoundedRect(24, 32, 42, 36, 5);
+    pGfx.fillStyle(0x4a2c1d, 1);
+    pGfx.fillRoundedRect(25, 33, 40, 16, 4); // Sunlit upper engine bevel
+    pGfx.lineStyle(2, 0xd97724, 0.95);
+    pGfx.strokeRoundedRect(24, 32, 42, 36, 5);
+    // Specular top highlight ridge
+    pGfx.lineStyle(1.5, 0xfef08a, 0.9);
+    pGfx.lineBetween(26, 32, 64, 32);
 
-    // Kenyalang Casque (Hornbill Forward Sweeping Beak & Crest Cockpit)
-    pGfx.fillStyle(0xd97724, 1);
+    // Engine Slotted Radiator Vents (Thermal cooling grills)
+    for (let vy = 38; vy <= 58; vy += 5) {
+      pGfx.fillStyle(0x0f172a, 1);
+      pGfx.fillRect(30, vy, 20, 3);
+      pGfx.fillStyle(0x9a3412, 0.85);
+      pGfx.fillRect(31, vy + 1, 18, 1); // Subtle internal heat shimmer filament
+    }
+
+    // Heavy Brass Rivet Studs along engine casing
+    const rivets = [
+      { x: 26, y: 35 }, { x: 62, y: 35 },
+      { x: 26, y: 64 }, { x: 62, y: 64 },
+    ];
+    for (const r of rivets) {
+      pGfx.fillStyle(0xf59e0b, 1);
+      pGfx.fillCircle(r.x, r.y, 1.8);
+      pGfx.fillStyle(0xffffff, 0.9);
+      pGfx.fillCircle(r.x - 0.5, r.y - 0.5, 0.8);
+    }
+
+    // --- Midship Cargo Hold: Pua Kumbu Nanoweave Carbon Armor (x: 64..108, y: 32..68) ---
+    // Deep Madder Crimson Base
+    pGfx.fillStyle(0x6b101e, 1);
+    pGfx.fillRect(64, 33, 44, 34);
+    pGfx.fillStyle(0x881337, 1);
+    pGfx.fillRect(66, 35, 40, 30);
+    // Directional lighting highlight on upper cargo plate
+    pGfx.fillStyle(0x9f1239, 1);
+    pGfx.fillRect(66, 35, 40, 12);
+
+    // Pua Kumbu Diamond Nanoweave Chevron Lattice
+    pGfx.lineStyle(1.5, 0xd97724, 0.85);
+    // Diamond 1
     pGfx.beginPath();
-    pGfx.moveTo(98, 38);
-    pGfx.lineTo(138, 34); // Upper hornbill casque sweep
-    pGfx.lineTo(154, 46); // Beak tip
-    pGfx.lineTo(142, 58); // Lower mandible
-    pGfx.lineTo(98, 58);
+    pGfx.moveTo(74, 50); pGfx.lineTo(80, 42); pGfx.lineTo(86, 50); pGfx.lineTo(80, 58);
     pGfx.closePath();
-    pGfx.fillPath();
-
-    // Hornbill Golden Casque Ridge
-    pGfx.fillStyle(0xf59e0b, 1);
+    pGfx.strokePath();
+    // Diamond 2
     pGfx.beginPath();
-    pGfx.moveTo(112, 36);
-    pGfx.lineTo(142, 28);
-    pGfx.lineTo(148, 38);
+    pGfx.moveTo(86, 50); pGfx.lineTo(92, 42); pGfx.lineTo(98, 50); pGfx.lineTo(92, 58);
     pGfx.closePath();
-    pGfx.fillPath();
-    pGfx.lineStyle(1.5, 0xfef08a, 1);
     pGfx.strokePath();
 
-    // Forward Canopy / Sensor Eye slit
-    pGfx.fillStyle(0x38bdf8, 0.9);
+    // Cargo Hold Heavy Armor Rim with Specular Gold Edging
+    pGfx.lineStyle(2, 0xf59e0b, 0.9);
+    pGfx.strokeRect(66, 35, 40, 30);
+    pGfx.lineStyle(1.5, 0xfef08a, 1);
+    pGfx.lineBetween(66, 35, 106, 35); // Upper specular glint
+
+    // --- Dayak Bungai Terung Reactor Rosette Motif (Centered at x: 86, y: 50) ---
+    // Outer Warding Ring
+    pGfx.lineStyle(1.8, 0xd97724, 0.95);
+    pGfx.strokeCircle(86, 50, 11);
+    pGfx.lineStyle(1, 0xfacc15, 0.7);
+    pGfx.strokeCircle(86, 50, 8.5);
+
+    // 8 Spiraling Dayak Petals
+    for (let i = 0; i < 8; i++) {
+      const ang = (i * Math.PI) / 4;
+      const x1 = 86 + Math.cos(ang) * 3;
+      const y1 = 50 + Math.sin(ang) * 3;
+      const x2 = 86 + Math.cos(ang + 0.35) * 8.5;
+      const y2 = 50 + Math.sin(ang + 0.35) * 8.5;
+      pGfx.lineStyle(1.4, 0xfef08a, 0.9);
+      pGfx.lineBetween(x1, y1, x2, y2);
+      pGfx.fillStyle(0xf59e0b, 1);
+      pGfx.fillCircle(x2, y2, 1.2);
+    }
+
+    // Glowing Amber / White Fusion Micro-Core
+    pGfx.fillStyle(0xfef08a, 1);
+    pGfx.fillCircle(86, 50, 3.2);
+    pGfx.fillStyle(0xffffff, 1);
+    pGfx.fillCircle(86, 50, 1.6);
+
+    // Glowing Power Conduit Lines radiating fore & aft
+    pGfx.lineStyle(1.4, 0xfbbf24, 0.85);
+    pGfx.lineBetween(66, 50, 75, 50);
+    pGfx.lineBetween(97, 50, 106, 50);
+
+    // --- Kenyalang Casque & Forward Prow Cockpit (x: 104..162, y: 26..66) ---
+    // Main Prow Forward Wedge
+    pGfx.fillStyle(0x7c2d12, 1); // Dark burnt sienna base
     pGfx.beginPath();
-    pGfx.moveTo(122, 42);
-    pGfx.lineTo(142, 44);
-    pGfx.lineTo(136, 49);
-    pGfx.lineTo(120, 48);
+    pGfx.moveTo(104, 34);
+    pGfx.lineTo(146, 32);
+    pGfx.lineTo(162, 48); // Sharp beak point
+    pGfx.lineTo(148, 62);
+    pGfx.lineTo(104, 62);
     pGfx.closePath();
     pGfx.fillPath();
 
-    // Dayak Ukir Warding Antennae
-    pGfx.lineStyle(1.5, 0xfef08a, 0.8);
-    pGfx.lineBetween(74, 36, 68, 20);
-    pGfx.lineBetween(90, 36, 86, 24);
+    // Directional Sunlit Upper Prow Plating
+    pGfx.fillStyle(0xc2410c, 1);
+    pGfx.beginPath();
+    pGfx.moveTo(104, 34);
+    pGfx.lineTo(146, 32);
+    pGfx.lineTo(162, 48);
+    pGfx.lineTo(144, 48);
+    pGfx.lineTo(104, 48);
+    pGfx.closePath();
+    pGfx.fillPath();
 
-    pGfx.generateTexture('ship_player', 160 * s, 96 * s);
+    // Polished Hornbill Golden Casque Ridge (Burung Kenyalang Crest)
+    pGfx.fillStyle(0xd97724, 1);
+    pGfx.beginPath();
+    pGfx.moveTo(114, 34);
+    pGfx.lineTo(144, 24); // Sweeping upward curve
+    pGfx.lineTo(154, 36);
+    pGfx.lineTo(134, 36);
+    pGfx.closePath();
+    pGfx.fillPath();
+
+    pGfx.fillStyle(0xf59e0b, 1);
+    pGfx.beginPath();
+    pGfx.moveTo(118, 33);
+    pGfx.lineTo(144, 25);
+    pGfx.lineTo(152, 34);
+    pGfx.lineTo(136, 34);
+    pGfx.closePath();
+    pGfx.fillPath();
+
+    // Specular Hornbill Casque Rim Stroke
+    pGfx.lineStyle(1.8, 0xfef08a, 1);
+    pGfx.strokePath();
+
+    // Lower Mandible Beak Cutting Rim
+    pGfx.lineStyle(1.8, 0xf59e0b, 1);
+    pGfx.lineBetween(162, 48, 148, 62);
+    pGfx.lineBetween(148, 62, 104, 62);
+
+    // --- High-Tech Polarized Bridge Canopy (Cockpit Visor) ---
+    pGfx.fillStyle(0x0c4a6e, 1);
+    pGfx.beginPath();
+    pGfx.moveTo(126, 42);
+    pGfx.lineTo(148, 43);
+    pGfx.lineTo(142, 50);
+    pGfx.lineTo(124, 49);
+    pGfx.closePath();
+    pGfx.fillPath();
+
+    // Holographic Flight Display Interior Glow
+    pGfx.fillStyle(0x38bdf8, 0.95);
+    pGfx.fillRect(128, 44, 15, 3);
+    pGfx.fillStyle(0xe0f2fe, 1);
+    pGfx.fillRect(132, 45, 8, 1.5);
+    // Canopy Glass Specular Slash
+    pGfx.lineStyle(1.2, 0xffffff, 0.95);
+    pGfx.lineBetween(140, 42, 144, 50);
+
+    // --- Dayak Carved Belian Ukir Antennae & Navigation Strobe Masts ---
+    pGfx.lineStyle(1.5, 0xfef08a, 0.85);
+    pGfx.lineBetween(74, 33, 68, 18);
+    pGfx.lineBetween(94, 33, 90, 20);
+    pGfx.fillStyle(0xfde68a, 1);
+    pGfx.fillCircle(68, 18, 1.8);
+    pGfx.fillCircle(90, 20, 1.8);
+
+    // Navigation Strobe Mounting Beacons
+    pGfx.fillStyle(0x22c55e, 1); // Starboard Green (Dorsal)
+    pGfx.fillCircle(50, 14, 2);
+    pGfx.fillStyle(0xef4444, 1); // Port Red (Ventral)
+    pGfx.fillCircle(42, 72, 2);
+
+    pGfx.generateTexture('ship_player', 168 * s, 100 * s);
     pGfx.destroy();
 
     // =========================================================================
-    // 2. ALLIANCE RAJAH CUTTER (Colonial customs gunboat) - 168x96
+    // 2. ALLIANCE RAJAH CUTTER (Colonial customs gunboat) - 176x100
     // =========================================================================
     const eGfx = this.make.graphics({ x: 0, y: 0 }, false);
     eGfx.setScale(s);
 
-    // Ion Drive Flare (Stern - right side)
-    eGfx.fillStyle(0x0284c7, 0.3);
-    eGfx.fillCircle(146, 48, 22);
+    // Ambient Under-Hull Shadow
+    eGfx.fillStyle(0x050b14, 0.45);
+    eGfx.fillEllipse(92, 58, 134, 38);
+
+    // Dual Heavy Ion Drive Flares (Stern - right side)
+    eGfx.fillStyle(0x0284c7, 0.28);
+    eGfx.fillCircle(154, 50, 24);
     eGfx.fillStyle(0x38bdf8, 0.85);
-    eGfx.fillTriangle(164, 40, 140, 34, 140, 62);
+    eGfx.fillTriangle(172, 42, 146, 34, 146, 66);
     eGfx.fillStyle(0xe0f2fe, 0.95);
-    eGfx.fillTriangle(156, 45, 140, 41, 140, 55);
+    eGfx.fillTriangle(164, 46, 146, 40, 146, 60);
 
-    // Heavy Colonial Swept Armour Fins
-    eGfx.fillStyle(0x1e293b, 1);
+    // Heavy Colonial Swept Armour Fins (Ventral & Dorsal Stabilizers)
+    // Dorsal Fin
+    eGfx.fillStyle(0x0f172a, 1);
     eGfx.beginPath();
-    eGfx.moveTo(64, 36);
-    eGfx.lineTo(132, 16);
-    eGfx.lineTo(144, 34);
+    eGfx.moveTo(68, 34); eGfx.lineTo(138, 14); eGfx.lineTo(150, 32);
     eGfx.closePath();
     eGfx.fillPath();
-    eGfx.lineStyle(1.5, 0x38bdf8, 0.8);
-    eGfx.strokePath();
-
     eGfx.fillStyle(0x1e293b, 1);
     eGfx.beginPath();
-    eGfx.moveTo(64, 60);
-    eGfx.lineTo(132, 80);
-    eGfx.lineTo(144, 62);
+    eGfx.moveTo(74, 34); eGfx.lineTo(134, 18); eGfx.lineTo(144, 32);
     eGfx.closePath();
     eGfx.fillPath();
+    eGfx.lineStyle(1.8, 0x38bdf8, 0.9);
     eGfx.strokePath();
 
-    // Primary Ironclad Wedge Hull
+    // Ventral Fin
+    eGfx.fillStyle(0x0f172a, 1);
+    eGfx.beginPath();
+    eGfx.moveTo(68, 66); eGfx.lineTo(138, 86); eGfx.lineTo(150, 68);
+    eGfx.closePath();
+    eGfx.fillPath();
+    eGfx.fillStyle(0x1e293b, 1);
+    eGfx.beginPath();
+    eGfx.moveTo(74, 66); eGfx.lineTo(134, 82); eGfx.lineTo(144, 68);
+    eGfx.closePath();
+    eGfx.fillPath();
+    eGfx.lineStyle(1.8, 0x0284c7, 0.9);
+    eGfx.strokePath();
+
+    // Primary Ironclad Wedge Hull (Chobham Armor Plates)
+    // Dark Underplate
+    eGfx.fillStyle(0x1e293b, 1);
+    eGfx.beginPath();
+    eGfx.moveTo(10, 50); // Aggressive ramming bow
+    eGfx.lineTo(72, 28);
+    eGfx.lineTo(148, 32);
+    eGfx.lineTo(148, 68);
+    eGfx.lineTo(72, 72);
+    eGfx.closePath();
+    eGfx.fillPath();
+
+    // Sunlit Dorsal Armor Plate (Top-Left Key Light)
     eGfx.fillStyle(0x334155, 1);
     eGfx.beginPath();
-    eGfx.moveTo(10, 48); // Aggressive ramming bow
-    eGfx.lineTo(68, 30);
-    eGfx.lineTo(142, 34);
-    eGfx.lineTo(142, 62);
-    eGfx.lineTo(68, 66);
+    eGfx.moveTo(10, 50);
+    eGfx.lineTo(72, 28);
+    eGfx.lineTo(148, 32);
+    eGfx.lineTo(148, 50);
+    eGfx.lineTo(10, 50);
     eGfx.closePath();
     eGfx.fillPath();
+
+    // Faceted Highlight Plate
+    eGfx.fillStyle(0x475569, 1);
+    eGfx.beginPath();
+    eGfx.moveTo(24, 48);
+    eGfx.lineTo(70, 31);
+    eGfx.lineTo(142, 34);
+    eGfx.lineTo(142, 44);
+    eGfx.lineTo(24, 48);
+    eGfx.closePath();
+    eGfx.fillPath();
+
+    // Specular Upper Ridge Rim
     eGfx.lineStyle(2, 0x38bdf8, 1);
     eGfx.strokePath();
+    eGfx.lineStyle(1.5, 0xffffff, 0.9);
+    eGfx.lineBetween(10, 50, 72, 28);
+    eGfx.lineBetween(72, 28, 148, 32);
 
-    // Customs Scanner Pod & Turret
-    eGfx.fillStyle(0x0284c7, 1);
-    eGfx.fillRect(76, 42, 46, 12);
-    eGfx.fillStyle(0xfacc15, 0.9);
-    eGfx.fillRect(36, 45, 26, 6);
+    // Deep Recessed Armor Seam Panel Lines
+    eGfx.lineStyle(1.5, 0x0f172a, 1);
+    eGfx.lineBetween(72, 28, 72, 72);
+    eGfx.lineBetween(110, 32, 110, 68);
 
-    // Imperial bridge viewing slit
+    // Colonial Authority Naval Blue Livery Stripe
+    eGfx.fillStyle(0x0284c7, 0.95);
+    eGfx.fillRect(74, 46, 52, 8);
+    eGfx.fillStyle(0xfacc15, 1);
+    eGfx.fillRect(74, 54, 52, 2.5); // Gold rank stripe
+
+    // Kinetic Autocannon Batteries (Dorsal & Ventral Barrels protruding forward)
+    // Dorsal Autocannon
+    eGfx.fillStyle(0x475569, 1);
+    eGfx.fillRect(36, 26, 24, 6);
+    eGfx.fillStyle(0x94a3b8, 1);
+    eGfx.fillRect(20, 27, 18, 4); // Twin barrel
+    eGfx.fillStyle(0xf8fafc, 1);
+    eGfx.fillRect(18, 27, 3, 4); // Muzzle brake tip
+
+    // Ventral Autocannon
+    eGfx.fillStyle(0x334155, 1);
+    eGfx.fillRect(36, 68, 24, 6);
+    eGfx.fillStyle(0x64748b, 1);
+    eGfx.fillRect(20, 69, 18, 4);
+    eGfx.fillStyle(0xf8fafc, 1);
+    eGfx.fillRect(18, 69, 3, 4);
+
+    // Imperial Tactical Command Bridge (Multi-paned Observation Canopy)
+    eGfx.fillStyle(0x0c4a6e, 1);
+    eGfx.fillRect(52, 38, 22, 8);
+    eGfx.fillStyle(0x38bdf8, 1);
+    eGfx.fillRect(54, 40, 18, 4);
     eGfx.fillStyle(0xffffff, 0.95);
-    eGfx.fillRect(52, 39, 14, 4);
+    eGfx.fillRect(58, 41, 10, 2);
 
-    eGfx.generateTexture('ship_enemy_cutter', 168 * s, 96 * s);
-    eGfx.generateTexture('ship_enemy', 168 * s, 96 * s);
+    // Forward Targeting Sensor Aperture (Blue Target Lock Blister)
+    eGfx.fillStyle(0x0284c7, 1);
+    eGfx.fillCircle(32, 49, 4);
+    eGfx.fillStyle(0x7dd3fc, 1);
+    eGfx.fillCircle(32, 49, 2);
+    eGfx.fillStyle(0xffffff, 1);
+    eGfx.fillCircle(31, 48, 1);
+
+    // Navigation Strobe Beacons
+    eGfx.fillStyle(0x38bdf8, 1);
+    eGfx.fillCircle(138, 14, 2);
+    eGfx.fillStyle(0xef4444, 1);
+    eGfx.fillCircle(138, 86, 2);
+
+    eGfx.generateTexture('ship_enemy_cutter', 176 * s, 100 * s);
+    eGfx.generateTexture('ship_enemy', 176 * s, 100 * s);
     eGfx.destroy();
 
     // =========================================================================
-    // 3. CUSTOMS PATROL SKIFF (Fast nimble recon skiff - Sector 1) - 140x80
+    // 3. CUSTOMS PATROL SKIFF (Fast nimble recon skiff - Sector 1) - 148x84
     // =========================================================================
     const skiffGfx = this.make.graphics({ x: 0, y: 0 }, false);
     skiffGfx.setScale(s);
 
-    // Twin Micro-Ion Drive
-    skiffGfx.fillStyle(0x38bdf8, 0.3);
-    skiffGfx.fillCircle(124, 40, 16);
-    skiffGfx.fillStyle(0x38bdf8, 0.9);
-    skiffGfx.fillTriangle(138, 34, 120, 28, 120, 52);
-    skiffGfx.fillStyle(0xffffff, 0.95);
-    skiffGfx.fillTriangle(132, 38, 120, 35, 120, 45);
+    // Drop Shadow
+    skiffGfx.fillStyle(0x050b14, 0.4);
+    skiffGfx.fillEllipse(78, 48, 110, 28);
 
-    // Needle-nose patrol hull
+    // Twin High-Velocity Ion Thrusters (Stern)
+    skiffGfx.fillStyle(0x38bdf8, 0.28);
+    skiffGfx.fillCircle(132, 42, 18);
+    skiffGfx.fillStyle(0x38bdf8, 0.9);
+    skiffGfx.fillTriangle(144, 35, 126, 30, 126, 54);
+    skiffGfx.fillStyle(0xffffff, 0.95);
+    skiffGfx.fillTriangle(138, 39, 126, 36, 126, 48);
+
+    // Swept Radar Wings
     skiffGfx.fillStyle(0x1e293b, 1);
     skiffGfx.beginPath();
-    skiffGfx.moveTo(8, 40); // Sharp needle nose
-    skiffGfx.lineTo(58, 24);
-    skiffGfx.lineTo(122, 28);
-    skiffGfx.lineTo(122, 52);
-    skiffGfx.lineTo(58, 56);
+    skiffGfx.moveTo(60, 26); skiffGfx.lineTo(104, 12); skiffGfx.lineTo(112, 28);
     skiffGfx.closePath();
     skiffGfx.fillPath();
-    skiffGfx.lineStyle(2, 0x38bdf8, 1);
+    skiffGfx.lineStyle(1.5, 0x0284c7, 0.9);
     skiffGfx.strokePath();
 
-    // Twin swept radar fins
-    skiffGfx.lineStyle(2, 0x0284c7, 1);
-    skiffGfx.lineBetween(58, 24, 94, 12);
-    skiffGfx.lineBetween(58, 56, 94, 68);
+    skiffGfx.fillStyle(0x1e293b, 1);
+    skiffGfx.beginPath();
+    skiffGfx.moveTo(60, 58); skiffGfx.lineTo(104, 72); skiffGfx.lineTo(112, 56);
+    skiffGfx.closePath();
+    skiffGfx.fillPath();
+    skiffGfx.lineStyle(1.5, 0x0284c7, 0.9);
+    skiffGfx.strokePath();
 
-    // Sensor cockpit slit
-    skiffGfx.fillStyle(0xfde68a, 1);
-    skiffGfx.fillRect(44, 37, 18, 6);
+    // Needle-Nose Interceptor Fuselage
+    // Dark Lower Fuselage
+    skiffGfx.fillStyle(0x1e293b, 1);
+    skiffGfx.beginPath();
+    skiffGfx.moveTo(8, 42); // Razor sharp nose
+    skiffGfx.lineTo(62, 26);
+    skiffGfx.lineTo(128, 30);
+    skiffGfx.lineTo(128, 54);
+    skiffGfx.lineTo(62, 58);
+    skiffGfx.closePath();
+    skiffGfx.fillPath();
 
-    skiffGfx.generateTexture('ship_enemy_skiff', 140 * s, 80 * s);
+    // Sunlit Naval White Dorsal Armor
+    skiffGfx.fillStyle(0xe2e8f0, 1);
+    skiffGfx.beginPath();
+    skiffGfx.moveTo(8, 42);
+    skiffGfx.lineTo(62, 26);
+    skiffGfx.lineTo(128, 30);
+    skiffGfx.lineTo(128, 42);
+    skiffGfx.lineTo(8, 42);
+    skiffGfx.closePath();
+    skiffGfx.fillPath();
+
+    // Specular Spine Highlight
+    skiffGfx.lineStyle(1.8, 0xffffff, 1);
+    skiffGfx.lineBetween(8, 42, 62, 26);
+    skiffGfx.lineBetween(62, 26, 128, 30);
+
+    // Naval Blue Authority Decal
+    skiffGfx.fillStyle(0x0369a1, 1);
+    skiffGfx.fillRect(66, 38, 42, 6);
+
+    // Hazard Stripes on Intake Collar (Black & Yellow Chevrons)
+    skiffGfx.fillStyle(0xfacc15, 1);
+    skiffGfx.fillRect(44, 37, 18, 10);
+    skiffGfx.fillStyle(0x0f172a, 1);
+    skiffGfx.beginPath();
+    skiffGfx.moveTo(46, 47); skiffGfx.lineTo(50, 37); skiffGfx.lineTo(53, 37); skiffGfx.lineTo(49, 47);
+    skiffGfx.closePath();
+    skiffGfx.fillPath();
+    skiffGfx.beginPath();
+    skiffGfx.moveTo(54, 47); skiffGfx.lineTo(58, 37); skiffGfx.lineTo(61, 37); skiffGfx.lineTo(57, 47);
+    skiffGfx.closePath();
+    skiffGfx.fillPath();
+
+    // Forward Long-Range Comm / Target Needle
+    skiffGfx.lineStyle(2, 0x64748b, 1);
+    skiffGfx.lineBetween(8, 42, 2, 42);
+    skiffGfx.fillStyle(0xef4444, 1);
+    skiffGfx.fillCircle(2, 42, 1.5); // Red sensor optic
+
+    // Tactical Visor / Cockpit Slit
+    skiffGfx.fillStyle(0x0284c7, 1);
+    skiffGfx.fillRect(32, 40, 10, 4);
+    skiffGfx.fillStyle(0x7dd3fc, 1);
+    skiffGfx.fillRect(34, 41, 6, 2);
+
+    skiffGfx.generateTexture('ship_enemy_skiff', 148 * s, 84 * s);
     skiffGfx.destroy();
 
     // =========================================================================
-    // 4. BROOKE IRONCLAD DREADNOUGHT (Massive Flagship - Sector 3) - 184x104
+    // 4. BROOKE IRONCLAD DREADNOUGHT (Massive Flagship - Sector 3) - 216x128
     // =========================================================================
     const dreadGfx = this.make.graphics({ x: 0, y: 0 }, false);
     dreadGfx.setScale(s);
 
-    // Quad Heavy Ion Thrusters
-    dreadGfx.fillStyle(0xef4444, 0.25);
-    dreadGfx.fillCircle(162, 52, 26);
-    dreadGfx.fillStyle(0xf97316, 0.85);
-    dreadGfx.fillTriangle(182, 40, 154, 30, 154, 74);
-    dreadGfx.fillStyle(0xfef08a, 0.95);
-    dreadGfx.fillTriangle(174, 46, 154, 38, 154, 66);
+    // Massive Fortress Deep Shadow
+    dreadGfx.fillStyle(0x050810, 0.55);
+    dreadGfx.fillEllipse(112, 74, 184, 52);
 
-    // Heavy Ironclad Citadel Bulkhead
+    // Quad Heavy Ion Thruster Bells (Stacked Stern Propulsion)
+    const thrusterY = [36, 54, 74, 92];
+    for (const ty of thrusterY) {
+      dreadGfx.fillStyle(0xef4444, 0.28);
+      dreadGfx.fillCircle(188, ty, 18);
+      dreadGfx.fillStyle(0xf97316, 0.85);
+      dreadGfx.fillTriangle(208, ty, 180, ty - 8, 180, ty + 8);
+      dreadGfx.fillStyle(0xfef08a, 0.95);
+      dreadGfx.fillTriangle(198, ty, 180, ty - 4, 180, ty + 4);
+
+      // Heavy Iron Exhaust Bell Cowlings
+      dreadGfx.fillStyle(0x1e293b, 1);
+      dreadGfx.fillRect(174, ty - 7, 10, 14);
+      dreadGfx.lineStyle(1.5, 0xd97724, 0.9);
+      dreadGfx.strokeRect(174, ty - 7, 10, 14);
+    }
+
+    // Heavy Ironclad Citadel Bulkhead (Multi-Tiered Armor)
+    // Layer 1: Dark Base Steel Hull
+    dreadGfx.fillStyle(0x090d16, 1);
+    dreadGfx.fillRect(72, 24, 106, 80);
+    dreadGfx.lineStyle(3, 0xef4444, 0.9);
+    dreadGfx.strokeRect(72, 24, 106, 80);
+
+    // Layer 2: Massive Armored Crushing Ram Prow (Forward Hull)
     dreadGfx.fillStyle(0x0f172a, 1);
-    dreadGfx.fillRect(72, 22, 84, 60);
-    dreadGfx.lineStyle(2.5, 0xef4444, 1);
-    dreadGfx.strokeRect(72, 22, 84, 60);
-
-    // Massive Armored Ram Prow
-    dreadGfx.fillStyle(0x1e293b, 1);
     dreadGfx.beginPath();
-    dreadGfx.moveTo(6, 52); // Heavy prow
-    dreadGfx.lineTo(72, 18);
-    dreadGfx.lineTo(156, 22);
-    dreadGfx.lineTo(156, 82);
-    dreadGfx.lineTo(72, 86);
+    dreadGfx.moveTo(8, 64); // Vicious naval ram prow
+    dreadGfx.lineTo(76, 20);
+    dreadGfx.lineTo(180, 24);
+    dreadGfx.lineTo(180, 104);
+    dreadGfx.lineTo(76, 108);
     dreadGfx.closePath();
     dreadGfx.fillPath();
-    dreadGfx.lineStyle(2.5, 0xef4444, 1);
+
+    // Directional Lighting on Upper Armor Plate
+    dreadGfx.fillStyle(0x1e293b, 1);
+    dreadGfx.beginPath();
+    dreadGfx.moveTo(8, 64);
+    dreadGfx.lineTo(76, 20);
+    dreadGfx.lineTo(180, 24);
+    dreadGfx.lineTo(180, 64);
+    dreadGfx.lineTo(8, 64);
+    dreadGfx.closePath();
+    dreadGfx.fillPath();
+
+    // Weathered Steel Highlight Facet
+    dreadGfx.fillStyle(0x334155, 1);
+    dreadGfx.beginPath();
+    dreadGfx.moveTo(24, 62);
+    dreadGfx.lineTo(74, 24);
+    dreadGfx.lineTo(176, 28);
+    dreadGfx.lineTo(176, 44);
+    dreadGfx.lineTo(24, 62);
+    dreadGfx.closePath();
+    dreadGfx.fillPath();
+
+    // Specular Rim on Upper Citadel Edge
+    dreadGfx.lineStyle(2.5, 0x64748b, 1);
+    dreadGfx.strokePath();
+    dreadGfx.lineStyle(1.8, 0xfacc15, 0.85);
+    dreadGfx.lineBetween(8, 64, 76, 20);
+    dreadGfx.lineBetween(76, 20, 180, 24);
+
+    // Victorian Brass Rivet Seams across Hull Bulkheads
+    const dreadRivetsX = [84, 108, 132, 156];
+    for (const rx of dreadRivetsX) {
+      dreadGfx.lineStyle(1, 0x090d16, 1);
+      dreadGfx.lineBetween(rx, 26, rx, 102); // Vertical plate seam
+      for (let ry = 30; ry <= 98; ry += 12) {
+        dreadGfx.fillStyle(0xd97724, 1);
+        dreadGfx.fillCircle(rx, ry, 1.8);
+        dreadGfx.fillStyle(0xfde68a, 0.9);
+        dreadGfx.fillCircle(rx - 0.5, ry - 0.5, 0.8);
+      }
+    }
+
+    // Imperial Gold Filigree on Ram Prow
+    dreadGfx.lineStyle(2, 0xf59e0b, 0.95);
+    dreadGfx.beginPath();
+    dreadGfx.moveTo(14, 64); dreadGfx.lineTo(44, 46); dreadGfx.lineTo(64, 52);
+    dreadGfx.strokePath();
+    dreadGfx.beginPath();
+    dreadGfx.moveTo(14, 64); dreadGfx.lineTo(44, 82); dreadGfx.lineTo(64, 76);
     dreadGfx.strokePath();
 
-    // Twin Casemate Mortar Batteries
+    // Triple Heavy Siege Mortar Batteries
+    // 1. Dorsal Mortar
     dreadGfx.fillStyle(0x7f1d1d, 1);
-    dreadGfx.fillRect(44, 28, 24, 10);
-    dreadGfx.fillRect(44, 66, 24, 10);
+    dreadGfx.fillRect(44, 30, 28, 12);
     dreadGfx.lineStyle(2, 0xfacc15, 1);
-    dreadGfx.strokeRect(44, 28, 24, 10);
-    dreadGfx.strokeRect(44, 66, 24, 10);
-    // Cannons
-    dreadGfx.lineStyle(3, 0xffffff, 1);
-    dreadGfx.lineBetween(44, 33, 26, 33);
-    dreadGfx.lineBetween(44, 71, 26, 71);
+    dreadGfx.strokeRect(44, 30, 28, 12);
+    dreadGfx.fillStyle(0x334155, 1);
+    dreadGfx.fillRect(22, 33, 24, 6);
+    dreadGfx.fillStyle(0xf8fafc, 1);
+    dreadGfx.fillRect(18, 32, 5, 8); // Muzzle brake
 
-    // Command Tower Bridge
-    dreadGfx.fillStyle(0xfde68a, 1);
-    dreadGfx.fillRect(94, 44, 30, 16);
-    dreadGfx.lineStyle(1.5, 0xef4444, 1);
-    dreadGfx.strokeRect(94, 44, 30, 16);
+    // 2. Center Spinal Mass Driver
+    dreadGfx.fillStyle(0x450a0a, 1);
+    dreadGfx.fillRect(36, 58, 32, 12);
+    dreadGfx.lineStyle(2, 0xef4444, 1);
+    dreadGfx.strokeRect(36, 58, 32, 12);
+    dreadGfx.fillStyle(0x1e293b, 1);
+    dreadGfx.fillRect(14, 61, 24, 6);
+    dreadGfx.fillStyle(0xf8fafc, 1);
+    dreadGfx.fillRect(10, 60, 5, 8);
 
-    dreadGfx.generateTexture('ship_enemy_dreadnought', 184 * s, 104 * s);
+    // 3. Ventral Mortar
+    dreadGfx.fillStyle(0x7f1d1d, 1);
+    dreadGfx.fillRect(44, 86, 28, 12);
+    dreadGfx.lineStyle(2, 0xfacc15, 1);
+    dreadGfx.strokeRect(44, 86, 28, 12);
+    dreadGfx.fillStyle(0x334155, 1);
+    dreadGfx.fillRect(22, 89, 24, 6);
+    dreadGfx.fillStyle(0xf8fafc, 1);
+    dreadGfx.fillRect(18, 88, 5, 8);
+
+    // Recessed Crimson Broadside Gun Ports
+    const portsY = [44, 54, 74, 84];
+    for (const py of portsY) {
+      dreadGfx.fillStyle(0x090d16, 1);
+      dreadGfx.fillRect(94, py - 3, 14, 6);
+      dreadGfx.fillStyle(0xef4444, 0.95);
+      dreadGfx.fillRect(96, py - 1.5, 6, 3);
+    }
+
+    // Imperial Observation Citadel Bridge Tower (Elevated Command Deck)
+    dreadGfx.fillStyle(0x1e293b, 1);
+    dreadGfx.fillRect(116, 46, 38, 24);
+    dreadGfx.lineStyle(2, 0xef4444, 1);
+    dreadGfx.strokeRect(116, 46, 38, 24);
+
+    // Menacing Crimson Command Slits (Lit from inside)
+    dreadGfx.fillStyle(0xef4444, 1);
+    dreadGfx.fillRect(120, 52, 28, 4);
+    dreadGfx.fillStyle(0xfde047, 1);
+    dreadGfx.fillRect(124, 53, 12, 2);
+
+    // Heavy Comms Spire & Strobe Beacons
+    dreadGfx.lineStyle(2, 0x94a3b8, 1);
+    dreadGfx.lineBetween(135, 46, 135, 26);
+    dreadGfx.lineBetween(120, 46, 120, 32);
+    dreadGfx.fillStyle(0xef4444, 1);
+    dreadGfx.fillCircle(135, 26, 2.5); // Crimson masthead beacon
+    dreadGfx.fillCircle(120, 32, 2);
+
+    dreadGfx.generateTexture('ship_enemy_dreadnought', 216 * s, 128 * s);
     dreadGfx.destroy();
   }
 
