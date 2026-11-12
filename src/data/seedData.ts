@@ -13,9 +13,9 @@ export const INITIAL_PLAYER_STATE: GameState = {
 };
 
 export const ACTIVE_CONTRACT_SEED: Contract = {
-  id: 'contract_unregistered_stims',
-  name: 'Unregistered Stims',
-  cargoName: 'Hot Stims',
+  id: 'contract_sarikei_gold',
+  name: 'The Sarikei Run',
+  cargoName: 'Sarikei Black Gold',
   payout: 120,
   contrabandCount: 2,
   voided: false,
@@ -26,28 +26,28 @@ export const ENEMY_INTENT_POOL: EnemyIntent[] = [
     id: 'CARGO_SCAN',
     name: 'Cargo Scan',
     value: 15,
-    description: 'Sweeps your hold: +15% Heat',
+    description: 'Customs scanners sweep cargo: +15% Heat',
     badgeText: 'CARGO SCAN (+15% HEAT)',
   },
   {
     id: 'WARNING_SHOT',
     name: 'Warning Shot',
     value: 7,
-    description: 'Fires across bow: 7 DMG',
+    description: 'Solid slug across prow: 7 DMG',
     badgeText: 'WARNING SHOT (7 DMG)',
   },
   {
     id: 'BROADSIDE',
     name: 'Broadside',
     value: 11,
-    description: 'Full cannon volley: 11 DMG',
+    description: 'Full naval cannon battery: 11 DMG',
     badgeText: 'BROADSIDE (11 DMG)',
   },
   {
     id: 'REINFORCE_HULL',
     name: 'Reinforce Hull',
     value: 8,
-    description: 'Raises plating: +8 Shield',
+    description: 'Armors prow bulkhead: +8 Shield',
     badgeText: 'REINFORCE (+8 SHIELD)',
   },
 ];
@@ -56,8 +56,8 @@ export function createAllianceCutter(): Enemy {
   const intents = ENEMY_INTENT_POOL.map((intent) => ({ ...intent, cancelled: false }));
   return {
     id: 'enemy_alliance_customs_cutter',
-    name: 'Alliance Customs Cutter',
-    subtitle: 'IAV-404 BORDER INTERCEPTOR',
+    name: 'Alliance Rajah Cutter',
+    subtitle: 'BORNEO SECTOR BORDER INTERCEPTOR',
     hull: 48,
     maxHull: 48,
     shield: 0,
@@ -69,130 +69,130 @@ export function createAllianceCutter(): Enemy {
 
 export function createStarterCrewDeck(): Card[] {
   const cards: Omit<Card, 'instanceId'>[] = [
-    // 3x Quick Draw (Mercenary - 1 AP): Deal 6 damage.
+    // 3x Parang Snap (Mercenary - 1 AP): Deal 6 damage.
     {
-      templateId: 'quick_draw',
-      title: 'Quick Draw',
+      templateId: 'parang_snap',
+      title: 'Parang Snap',
       type: 'Mercenary',
       apCost: 1,
       damage: 6,
-      description: 'Deal 6 DMG to enemy.',
-      iconKey: 'icon_blaster',
+      description: 'Kinetic blade slash.\nDeal 6 DMG.',
+      iconKey: 'icon_parang',
     },
     {
-      templateId: 'quick_draw',
-      title: 'Quick Draw',
+      templateId: 'parang_snap',
+      title: 'Parang Snap',
       type: 'Mercenary',
       apCost: 1,
       damage: 6,
-      description: 'Deal 6 DMG to enemy.',
-      iconKey: 'icon_blaster',
+      description: 'Kinetic blade slash.\nDeal 6 DMG.',
+      iconKey: 'icon_parang',
     },
     {
-      templateId: 'quick_draw',
-      title: 'Quick Draw',
+      templateId: 'parang_snap',
+      title: 'Parang Snap',
       type: 'Mercenary',
       apCost: 1,
       damage: 6,
-      description: 'Deal 6 DMG to enemy.',
-      iconKey: 'icon_blaster',
+      description: 'Kinetic blade slash.\nDeal 6 DMG.',
+      iconKey: 'icon_parang',
     },
 
-    // 2x Vera's Whisper (Mercenary - 2 AP): Deal 14 damage. If this defeats the enemy, reduce Heat by 10%.
+    // 2x Sumpit Dart (Mercenary - 2 AP): Deal 14 damage. Fatal: -10% Heat.
     {
-      templateId: 'veras_whisper',
-      title: "Vera's Whisper",
+      templateId: 'sumpit_dart',
+      title: 'Sumpit Dart',
       type: 'Mercenary',
       apCost: 2,
       damage: 14,
       onKillHeatDelta: -10,
-      description: 'Deal 14 DMG.\nFatal: -10% Heat.',
-      iconKey: 'icon_rifle',
+      description: 'Silent Upas dart.\n14 DMG. Fatal: -10% Heat.',
+      iconKey: 'icon_sumpit',
     },
     {
-      templateId: 'veras_whisper',
-      title: "Vera's Whisper",
+      templateId: 'sumpit_dart',
+      title: 'Sumpit Dart',
       type: 'Mercenary',
       apCost: 2,
       damage: 14,
       onKillHeatDelta: -10,
-      description: 'Deal 14 DMG.\nFatal: -10% Heat.',
-      iconKey: 'icon_rifle',
+      description: 'Silent Upas dart.\n14 DMG. Fatal: -10% Heat.',
+      iconKey: 'icon_sumpit',
     },
 
-    // 3x Evasive Burn (Pilot - 1 AP): Gain 6 Evasion.
+    // 3x Rapid Skim (Pilot - 1 AP): Gain 6 Evasion.
     {
-      templateId: 'evasive_burn',
-      title: 'Evasive Burn',
+      templateId: 'rapid_skim',
+      title: 'Rapid Skim',
       type: 'Pilot',
       apCost: 1,
       evasion: 6,
-      description: 'Gain +6\nEvasion.',
-      iconKey: 'icon_thruster',
+      description: 'Shallow river draft.\nGain +6 Evasion.',
+      iconKey: 'icon_rapid_skim',
     },
     {
-      templateId: 'evasive_burn',
-      title: 'Evasive Burn',
+      templateId: 'rapid_skim',
+      title: 'Rapid Skim',
       type: 'Pilot',
       apCost: 1,
       evasion: 6,
-      description: 'Gain +6\nEvasion.',
-      iconKey: 'icon_thruster',
+      description: 'Shallow river draft.\nGain +6 Evasion.',
+      iconKey: 'icon_rapid_skim',
     },
     {
-      templateId: 'evasive_burn',
-      title: 'Evasive Burn',
+      templateId: 'rapid_skim',
+      title: 'Rapid Skim',
       type: 'Pilot',
       apCost: 1,
       evasion: 6,
-      description: 'Gain +6\nEvasion.',
-      iconKey: 'icon_thruster',
+      description: 'Shallow river draft.\nGain +6 Evasion.',
+      iconKey: 'icon_rapid_skim',
     },
 
-    // 2x Crazy Ivan (Pilot - 2 AP): Gain 10 Evasion and deal 5 damage.
+    // 2x Rajang Whirlpool (Pilot - 2 AP): Gain 10 Evasion and deal 5 damage.
     {
-      templateId: 'crazy_ivan',
-      title: 'Crazy Ivan',
+      templateId: 'rajang_whirlpool',
+      title: 'Rajang Whirlpool',
       type: 'Pilot',
       apCost: 2,
       evasion: 10,
       damage: 5,
-      description: 'Gain +10 Evasion.\nDeal 5 DMG.',
-      iconKey: 'icon_maneuver',
+      description: 'Pelagus rapids spin.\n+10 Evasion • 5 DMG.',
+      iconKey: 'icon_rajang',
     },
     {
-      templateId: 'crazy_ivan',
-      title: 'Crazy Ivan',
+      templateId: 'rajang_whirlpool',
+      title: 'Rajang Whirlpool',
       type: 'Pilot',
       apCost: 2,
       evasion: 10,
       damage: 5,
-      description: 'Gain +10 Evasion.\nDeal 5 DMG.',
-      iconKey: 'icon_maneuver',
+      description: 'Pelagus rapids spin.\n+10 Evasion • 5 DMG.',
+      iconKey: 'icon_rajang',
     },
 
-    // 1x Duct-Tape Bypass (Mechanic - 1 AP): Restore 4 Hull and draw 1 card.
+    // 1x Rattan Lashing (Mechanic - 1 AP): Restore 4 Hull and draw 1 card.
     {
-      templateId: 'duct_tape_bypass',
-      title: 'Duct-Tape Bypass',
+      templateId: 'rattan_lashing',
+      title: 'Rattan Lashing',
       type: 'Mechanic',
       apCost: 1,
       healHull: 4,
       drawCards: 1,
-      description: 'Restore 4 Hull.\nDraw 1 card.',
-      iconKey: 'icon_wrench',
+      description: 'Braided jungle weave.\n+4 Hull • Draw 1 card.',
+      iconKey: 'icon_rattan',
     },
 
-    // 1x Fast Talk (Captain - 1 AP): Spend 15 Credits to cancel the enemy's current Intent for this turn.
+    // 1x Haggling at Bazaar (Captain - 1 AP): Spend 15 Credits to cancel the enemy's current Intent.
     {
-      templateId: 'fast_talk',
-      title: 'Fast Talk',
+      templateId: 'haggling_bazaar',
+      title: 'Bazaar Haggling',
       type: 'Captain',
       apCost: 1,
       creditCost: 15,
       cancelIntent: true,
-      description: 'Pay 15 Cr:\nCancel enemy\nIntent.',
-      iconKey: 'icon_comms',
+      description: 'Waterfront barter.\nPay 15 Cr: Jam Intent.',
+      iconKey: 'icon_haggling',
     },
   ];
 
@@ -206,15 +206,15 @@ export function createContrabandCards(count = 2): Card[] {
   const cards: Card[] = [];
   for (let i = 0; i < count; i++) {
     cards.push({
-      instanceId: `contraband_hot_stims_${i + 1}`,
-      templateId: 'hot_stims',
-      title: 'Hot Stims',
+      instanceId: `contraband_sarikei_gold_${i + 1}`,
+      templateId: 'sarikei_black_gold',
+      title: 'Sarikei Gold',
       type: 'Contraband',
       apCost: 0,
       unplayable: true,
       endTurnHeatPenalty: 10,
       description: 'UNPLAYABLE\nEnd Turn: +10% Heat\nAIRLOCK: 0 AP',
-      iconKey: 'icon_contraband',
+      iconKey: 'icon_pepper',
     });
   }
   return cards;

@@ -176,7 +176,7 @@ export class CombatScene extends Phaser.Scene {
     hudBg.lineBetween(0, 115, 450, 115);
 
     // Header title bar
-    this.addText(14, 8, 'RIMWARD RUN // SECTOR 04-B', {
+    this.addText(14, 8, 'RIMWARD RUN // SARAWAK CORRIDOR', {
         fontFamily: 'Courier New, monospace',
         fontSize: '11px',
         fontStyle: 'bold',
@@ -262,7 +262,7 @@ export class CombatScene extends Phaser.Scene {
     this.playerShipSprite = this.add.image(0, 0, 'ship_player').setScale(0.5);
     this.playerShipContainer.add(this.playerShipSprite);
 
-    const playerLabel = this.addText(0, 52, 'SS DUSTRUNNER (SMUGGLER)', {
+    const playerLabel = this.addText(0, 52, 'SS KENYALANG-IV (BEJALAI RUNNER)', {
         fontFamily: 'Courier New, monospace',
         fontSize: '10px',
         fontStyle: 'bold',
@@ -283,10 +283,20 @@ export class CombatScene extends Phaser.Scene {
     // Player Evasion Shield Badge
     this.playerEvasionBadge = this.add.container(0, -56);
     const evBg = this.add.graphics();
-    evBg.fillStyle(0x0c4a6e, 0.92);
-    evBg.fillRoundedRect(-58, -14, 116, 28, 6);
+    evBg.fillStyle(0x0c4a6e, 0.94);
+    evBg.beginPath();
+    evBg.moveTo(0, -15);
+    evBg.lineTo(56, -7);
+    evBg.lineTo(56, 7);
+    evBg.lineTo(0, 15);
+    evBg.lineTo(-56, 7);
+    evBg.lineTo(-56, -7);
+    evBg.closePath();
+    evBg.fillPath();
     evBg.lineStyle(1.5, 0x38bdf8, 1);
-    evBg.strokeRoundedRect(-58, -14, 116, 28, 6);
+    evBg.strokePath();
+    evBg.lineStyle(1, 0xfde68a, 0.6);
+    evBg.lineBetween(0, -12, 0, 12);
     this.playerEvasionText = this.addText(0, 0, '🛡️ EVASION: 0', {
         fontFamily: 'Courier New, monospace',
         fontSize: '11px',
@@ -311,7 +321,7 @@ export class CombatScene extends Phaser.Scene {
     this.enemyShipSprite = this.add.image(0, 0, 'ship_enemy').setScale(0.5);
     this.enemyShipContainer.add(this.enemyShipSprite);
 
-    const enemyNameLabel = this.addText(0, 46, 'ALLIANCE CUSTOMS CUTTER', {
+    const enemyNameLabel = this.addText(0, 46, 'ALLIANCE RAJAH CUTTER', {
         fontFamily: 'Courier New, monospace',
         fontSize: '10px',
         fontStyle: 'bold',
@@ -549,7 +559,7 @@ export class CombatScene extends Phaser.Scene {
     this.apOrbBg.fillRoundedRect(148, 474, 154, 38, 18);
     this.apOrbBg.lineStyle(2.5, apColor, 1);
     this.apOrbBg.strokeRoundedRect(148, 474, 154, 38, 18);
-    this.apOrbText.setText(`⚡ AP: ${state.player.ap}/${state.player.maxAp}`);
+    this.apOrbText.setText(`✦ AP: ${state.player.ap}/${state.player.maxAp} ✦`);
     this.apOrbText.setColor(state.player.ap > 0 ? '#fef08a' : '#94a3b8');
 
     // 4. Rebuild Card Hand
@@ -631,7 +641,7 @@ export class CombatScene extends Phaser.Scene {
       this.contractBadgeBg.lineStyle(1.5, 0xeab308, 0.85);
       this.contractBadgeBg.strokeRoundedRect(12, 72, 426, 34, 7);
       this.contractBadgeText.setText(
-        `📦 CONTRACT: ${state.contract.name} — PAYOUT: ${state.contract.payout} Cr`
+        `📦 BEJALAI CONTRACT: ${state.contract.name} — PAYOUT: ${state.contract.payout} Cr`
       );
       this.contractBadgeText.setColor('#fde68a');
     } else {
@@ -640,7 +650,7 @@ export class CombatScene extends Phaser.Scene {
       this.contractBadgeBg.lineStyle(1.5, 0xef4444, 0.95);
       this.contractBadgeBg.strokeRoundedRect(12, 72, 426, 34, 7);
       this.contractBadgeText.setText(
-        `⚠️ CONTRACT: ${state.contract.name} — [JETTISONED / 0 Cr]`
+        `⚠️ BEJALAI CONTRACT: ${state.contract.name} — [JETTISONED / 0 Cr]`
       );
       this.contractBadgeText.setColor('#fca5a5');
     }
@@ -726,15 +736,15 @@ export class CombatScene extends Phaser.Scene {
   private getRoleColors(type: CardType): { stripe: number; border: number; badgeText: string } {
     switch (type) {
       case 'Mercenary':
-        return { stripe: 0xd97724, border: 0xf97316, badgeText: '#fed7aa' };
+        return { stripe: 0x9e2a2b, border: 0xc85a32, badgeText: '#fed7aa' };
       case 'Pilot':
-        return { stripe: 0x0284c7, border: 0x38bdf8, badgeText: '#bae6fd' };
+        return { stripe: 0x0369a1, border: 0x38bdf8, badgeText: '#bae6fd' };
       case 'Mechanic':
-        return { stripe: 0x16a34a, border: 0x4ade80, badgeText: '#bbf7d0' };
+        return { stripe: 0x15803d, border: 0x4ade80, badgeText: '#bbf7d0' };
       case 'Captain':
-        return { stripe: 0xca8a04, border: 0xeab308, badgeText: '#fef08a' };
+        return { stripe: 0xb45309, border: 0xe09f3e, badgeText: '#fef08a' };
       case 'Contraband':
-        return { stripe: 0xdc2626, border: 0xef4444, badgeText: '#fecaca' };
+        return { stripe: 0x7f1d1d, border: 0xef4444, badgeText: '#fecaca' };
     }
   }
 
@@ -872,25 +882,44 @@ export class CombatScene extends Phaser.Scene {
   ): void {
     const w = 98;
     const h = 148;
+    const bevel = 6;
     const roleColors = this.getRoleColors(card.type);
     const isContraband = card.type === 'Contraband';
 
     gfx.clear();
 
-    // Card body background
-    const bodyFill = isContraband ? 0x2c0b0e : 0x1e293b;
+    // Terabai faceted war shield body
+    const bodyFill = isContraband ? 0x2c0b0e : 0x151d2c;
     gfx.fillStyle(bodyFill, 0.98);
-    gfx.fillRoundedRect(-w / 2, -h / 2, w, h, 8);
+    gfx.beginPath();
+    gfx.moveTo(-w / 2 + bevel, -h / 2);
+    gfx.lineTo(w / 2 - bevel, -h / 2);
+    gfx.lineTo(w / 2, -h / 2 + bevel);
+    gfx.lineTo(w / 2, h / 2 - bevel);
+    gfx.lineTo(w / 2 - bevel, h / 2);
+    gfx.lineTo(-w / 2 + bevel, h / 2);
+    gfx.lineTo(-w / 2, h / 2 - bevel);
+    gfx.lineTo(-w / 2, -h / 2 + bevel);
+    gfx.closePath();
+    gfx.fillPath();
 
     // Role color stripe across top
-    gfx.fillStyle(roleColors.stripe, 0.9);
-    gfx.fillRoundedRect(-w / 2 + 2, -h / 2 + 2, w - 4, 26, { tl: 6, tr: 6, bl: 0, br: 0 });
+    gfx.fillStyle(roleColors.stripe, 0.92);
+    gfx.beginPath();
+    gfx.moveTo(-w / 2 + bevel, -h / 2 + 2);
+    gfx.lineTo(w / 2 - bevel, -h / 2 + 2);
+    gfx.lineTo(w / 2 - 2, -h / 2 + bevel);
+    gfx.lineTo(w / 2 - 2, -h / 2 + 26);
+    gfx.lineTo(-w / 2 + 2, -h / 2 + 26);
+    gfx.lineTo(-w / 2 + 2, -h / 2 + bevel);
+    gfx.closePath();
+    gfx.fillPath();
 
-    // Inner artwork frame
-    gfx.fillStyle(0x0f172a, 0.85);
-    gfx.fillRoundedRect(-w / 2 + 8, -22, w - 16, 36, 5);
+    // Inner artwork frame with Dayak diamond notches
+    gfx.fillStyle(0x070c18, 0.92);
+    gfx.fillRoundedRect(-w / 2 + 8, -22, w - 16, 36, 4);
 
-    // Border stroke
+    // Outer Terabai stroke
     const borderCol = highlighted
       ? 0xfef08a
       : isContraband
@@ -900,7 +929,21 @@ export class CombatScene extends Phaser.Scene {
       : 0x475569;
     const borderThickness = highlighted ? 2.8 : playable || isContraband ? 2 : 1.5;
     gfx.lineStyle(borderThickness, borderCol, 1);
-    gfx.strokeRoundedRect(-w / 2, -h / 2, w, h, 8);
+    gfx.beginPath();
+    gfx.moveTo(-w / 2 + bevel, -h / 2);
+    gfx.lineTo(w / 2 - bevel, -h / 2);
+    gfx.lineTo(w / 2, -h / 2 + bevel);
+    gfx.lineTo(w / 2, h / 2 - bevel);
+    gfx.lineTo(w / 2 - bevel, h / 2);
+    gfx.lineTo(-w / 2 + bevel, h / 2);
+    gfx.lineTo(-w / 2, h / 2 - bevel);
+    gfx.lineTo(-w / 2, -h / 2 + bevel);
+    gfx.closePath();
+    gfx.strokePath();
+
+    // Central spine accent
+    gfx.lineStyle(1, borderCol, 0.35);
+    gfx.lineBetween(0, 24, 0, h / 2 - bevel);
   }
 
   private attachCardInteractions(visual: CardVisual): void {
@@ -1103,22 +1146,72 @@ export class CombatScene extends Phaser.Scene {
     });
   }
 
-  /** Tiny procedural WebAudio blips — zero audio assets. */
+  /** Procedural WebAudio synthesizer with Sape' pentatonic lute plucks and Gendang drum resonance. */
   private sfx(kind: 'pickup' | 'play' | 'hit' | 'deny' | 'airlock' | 'alarm' | 'win' | 'lose'): void {
     const sound = this.sound as Phaser.Sound.WebAudioSoundManager;
     const ctx = sound.context;
     if (!ctx || sound.locked) return;
-    const presets: Record<typeof kind, { f0: number; f1: number; dur: number; type: OscillatorType; vol: number }> = {
+
+    if (kind === 'play') {
+      // Sape' pentatonic lute pluck (C4, D4, F4, G4, A4, C5)
+      const pentatonic = [261.63, 293.66, 349.23, 392.0, 440.0, 523.25];
+      const f = pentatonic[Math.floor(Math.random() * pentatonic.length)];
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(f, t);
+      gain.gain.setValueAtTime(0.08, t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.36);
+      return;
+    }
+
+    if (kind === 'win') {
+      // Sape' victory chord arpeggio
+      const notes = [261.63, 349.23, 392.0, 523.25];
+      notes.forEach((f, idx) => {
+        const t = ctx.currentTime + idx * 0.12;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, t);
+        gain.gain.setValueAtTime(0.09, t);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.62);
+      });
+      return;
+    }
+
+    if (kind === 'hit') {
+      // Gendang hollow skin strike
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(140, t);
+      osc.frequency.exponentialRampToValueAtTime(32, t + 0.26);
+      gain.gain.setValueAtTime(0.12, t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.26);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.28);
+      return;
+    }
+
+    const presets: Record<string, { f0: number; f1: number; dur: number; type: OscillatorType; vol: number }> = {
       pickup: { f0: 520, f1: 700, dur: 0.06, type: 'triangle', vol: 0.05 },
-      play: { f0: 300, f1: 900, dur: 0.12, type: 'square', vol: 0.05 },
-      hit: { f0: 180, f1: 50, dur: 0.22, type: 'sawtooth', vol: 0.08 },
       deny: { f0: 160, f1: 120, dur: 0.1, type: 'square', vol: 0.04 },
       airlock: { f0: 900, f1: 60, dur: 0.55, type: 'sawtooth', vol: 0.08 },
       alarm: { f0: 660, f1: 440, dur: 0.3, type: 'square', vol: 0.05 },
-      win: { f0: 440, f1: 1320, dur: 0.6, type: 'triangle', vol: 0.07 },
       lose: { f0: 300, f1: 40, dur: 0.8, type: 'sawtooth', vol: 0.07 },
     };
     const p = presets[kind];
+    if (!p) return;
     const t = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -1432,13 +1525,13 @@ export class CombatScene extends Phaser.Scene {
     const isVictory = state.outcome === 'VICTORY';
     const borderCol = isVictory ? 0xeab308 : 0xef4444;
     const headerTitle = isVictory
-      ? '★ BLOCKADE RUN SUCCESSFUL ★'
+      ? '★ BEJALAI TRIAL HONORED ★'
       : state.outcome === 'DEFEAT_HEAT'
       ? '🚨 BOARDED & IMPOUNDED (100% HEAT) 🚨'
       : '💥 SHIP HULL BREACHED 💥';
 
     const subtitle = isVictory
-      ? 'Alliance Customs Cutter disabled. Jump drive spooled!'
+      ? 'Alliance Rajah Cutter evaded! Jump drive spooled for home longhouse!'
       : state.outcome === 'DEFEAT_HEAT'
       ? 'Alliance customs locked magnetic clamps onto your vessel.'
       : 'Critical reactor failure in the Rimward sector.';

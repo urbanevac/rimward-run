@@ -35,7 +35,7 @@ export class CombatEngine {
       hand: [],
       discardPile: [],
       exhaustPile: [],
-      lastLog: 'Alliance Cutter has locked on. Prepare for inspection!',
+      lastLog: 'Alliance Rajah Cutter has locked onto your signature. Prepare for inspection!',
       outcome: 'ONGOING',
       creditsEarnedThisRun: 0,
     };

@@ -1,6 +1,14 @@
 export type CardType = 'Mercenary' | 'Pilot' | 'Mechanic' | 'Captain' | 'Contraband';
 
 export type CardTemplateId =
+  | 'parang_snap'
+  | 'sumpit_dart'
+  | 'rapid_skim'
+  | 'rajang_whirlpool'
+  | 'rattan_lashing'
+  | 'haggling_bazaar'
+  | 'sarikei_black_gold'
+  // Legacy aliases for backward compatibility if needed
   | 'quick_draw'
   | 'veras_whisper'
   | 'evasive_burn'

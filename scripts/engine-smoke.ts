@@ -1,5 +1,5 @@
 /**
- * Headless smoke test for CombatEngine (no Phaser).
+ * Headless smoke test for CombatEngine with Sarawakian deck (no Phaser).
  * Run: npm run test:engine
  */
 import { CombatEngine } from '../src/engine/CombatEngine';
@@ -40,14 +40,14 @@ function forceIntoHand(engine: CombatEngine, templateId: Card['templateId']): Ca
   check('first intent is Cargo Scan', s.enemy.currentIntent.id === 'CARGO_SCAN');
 }
 
-// --- Fast Talk cancels intent ---
+// --- Bazaar Haggling cancels intent ---
 {
   const e = new CombatEngine();
-  const ft = forceIntoHand(e, 'fast_talk')!;
+  const ft = forceIntoHand(e, 'haggling_bazaar')!;
   const r = e.playCard(ft.instanceId);
   const s = e.getState();
-  check('Fast Talk plays', r.success && r.cancelledIntent);
-  check('Fast Talk costs 15 Cr + 1 AP', s.player.credits === 50 && s.player.ap === 2);
+  check('Bazaar Haggling plays', r.success && r.cancelledIntent);
+  check('Bazaar Haggling costs 15 Cr + 1 AP', s.player.credits === 50 && s.player.ap === 2);
   const heatBefore = s.player.heat;
   // Remove contraband from hand so only the intent matters
   (e as unknown as EngineInternals).state.hand = (e as unknown as EngineInternals).state.hand.filter((c) => c.type !== 'Contraband');
@@ -56,35 +56,35 @@ function forceIntoHand(engine: CombatEngine, templateId: Card['templateId']): Ca
   check('intent advances to Warning Shot', e.getState().enemy.currentIntent.id === 'WARNING_SHOT');
 }
 
-// --- Contraband penalty & jettison ---
+// --- Contraband penalty & jettison (Sarikei Black Gold) ---
 {
   const e = new CombatEngine();
   const internals = (e as unknown as EngineInternals).state;
   internals.hand = internals.hand.filter((c) => c.type !== 'Contraband');
-  const stim = forceIntoHand(e, 'hot_stims')!;
-  check('Hot Stims cannot be played', !e.playCard(stim.instanceId).success);
+  const stim = forceIntoHand(e, 'sarikei_black_gold')!;
+  check('Sarikei Gold cannot be played', !e.playCard(stim.instanceId).success);
   const end = e.endTurn(); // Cargo Scan +15, Stims +10
-  check('end turn w/ Stims: +10 contraband heat', end.contrabandHeatAdded === 10);
+  check('end turn w/ Sarikei Gold: +10 contraband heat', end.contrabandHeatAdded === 10);
   check('heat = 25 + 10 + 15 = 50', e.getState().player.heat === 50);
 
-  const stim2 = forceIntoHand(e, 'hot_stims')!;
+  const stim2 = forceIntoHand(e, 'sarikei_black_gold')!;
   const j = e.jettisonCard(stim2.instanceId);
   const s = e.getState();
   check('jettison succeeds & voids contract', j.success && s.contract.voided);
   check('jettisoned card is exhausted (not in any pile)', s.exhaustPile.length === 1 && ![...s.hand, ...s.drawPile, ...s.discardPile].some((c) => c.instanceId === stim2.instanceId));
-  const qd = forceIntoHand(e, 'quick_draw')!;
-  check('cannot jettison crew cards', !e.jettisonCard(qd.instanceId).success);
+  const ps = forceIntoHand(e, 'parang_snap')!;
+  check('cannot jettison crew cards', !e.jettisonCard(ps.instanceId).success);
 }
 
-// --- Evasion absorbs damage then resets ---
+// --- Evasion absorbs damage then resets (Rapid Skim) ---
 {
   const e = new CombatEngine();
   const st = (e as unknown as EngineInternals).state;
   st.hand = st.hand.filter((c) => c.type !== 'Contraband');
   e.endTurn(); // scan
   st.hand = st.hand.filter((c) => c.type !== 'Contraband');
-  const eb = forceIntoHand(e, 'evasive_burn')!;
-  e.playCard(eb.instanceId);
+  const rs = forceIntoHand(e, 'rapid_skim')!;
+  e.playCard(rs.instanceId);
   const end = e.endTurn(); // Warning Shot 7
   check('Evasion 6 absorbs 6 of 7 dmg', end.damageAbsorbedByEvasion === 6 && end.hullDamageTaken === 1);
   check('evasion resets to 0 next turn', e.getState().player.evasion === 0);
@@ -112,15 +112,15 @@ function forceIntoHand(engine: CombatEngine, templateId: Card['templateId']): Ca
   check('reset restores ONGOING + full enemy hull', e.getState().outcome === 'ONGOING' && e.getState().enemy.hull === 48);
 }
 
-// --- Victory with payout (Vera's kill shot) ---
+// --- Victory with payout (Sumpit Dart fatal shot) ---
 {
   const e = new CombatEngine();
   const st = (e as unknown as EngineInternals).state as unknown as { enemy: { hull: number }; player: { heat: number } } & EngineInternals['state'];
   st.enemy.hull = 10;
-  const vw = forceIntoHand(e, 'veras_whisper')!;
-  const r = e.playCard(vw.instanceId);
+  const sd = forceIntoHand(e, 'sumpit_dart')!;
+  const r = e.playCard(sd.instanceId);
   const s = e.getState();
-  check("Vera's Whisper kill → VICTORY", r.killedEnemy && s.outcome === 'VICTORY');
+  check("Sumpit Dart kill → VICTORY", r.killedEnemy && s.outcome === 'VICTORY');
   check('kill shot reduces heat by 10', s.player.heat === 15);
   check('intact contract pays 120 Cr', s.creditsEarnedThisRun === 120 && s.player.credits === 185);
 }
