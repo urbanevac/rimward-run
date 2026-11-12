@@ -73,6 +73,15 @@ export class CombatScene extends Phaser.Scene {
   private airlockTitleText!: Phaser.GameObjects.Text;
   private airlockSubText!: Phaser.GameObjects.Text;
 
+  // Visual Effects & Particle Emitters
+  private playerThrusterEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private enemyThrusterEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private combatSparkEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private spaceDustEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private playerShieldAura!: Phaser.GameObjects.Graphics;
+  private enemyShieldAura!: Phaser.GameObjects.Graphics;
+  private currentEnemySector = 0;
+
   private endTurnContainer!: Phaser.GameObjects.Container;
   private endTurnBg!: Phaser.GameObjects.Graphics;
   private endTurnText!: Phaser.GameObjects.Text;
@@ -120,6 +129,24 @@ export class CombatScene extends Phaser.Scene {
       this.starsFar.tilePositionX += delta * 0.008;
       this.starsNear.tilePositionX += delta * 0.022;
     }
+
+    // Synchronize player plasma thruster emitter position
+    if (this.playerThrusterEmitter && this.playerShipContainer && this.playerShipSprite) {
+      this.playerThrusterEmitter.setPosition(
+        this.playerShipContainer.x - 38,
+        this.playerShipContainer.y + this.playerShipSprite.y
+      );
+    }
+
+    // Synchronize enemy ion thruster emitter position
+    if (this.enemyThrusterEmitter && this.enemyShipContainer && this.enemyShipSprite) {
+      const state = this.engine ? this.engine.getState() : undefined;
+      const xOffset = state?.sector.number === 3 ? 36 : (state?.sector.number === 2 ? 32 : 27);
+      this.enemyThrusterEmitter.setPosition(
+        this.enemyShipContainer.x + xOffset,
+        this.enemyShipContainer.y + this.enemyShipSprite.y
+      );
+    }
   }
 
   // =========================================================================
@@ -134,6 +161,20 @@ export class CombatScene extends Phaser.Scene {
     // Diorama viewport (y = 115 to 435)
     this.starsFar = this.add.tileSprite(225, 275, 450, 320, 'bg_stars_far').setTileScale(0.5, 0.5);
     this.starsNear = this.add.tileSprite(225, 275, 450, 320, 'bg_stars_near').setTileScale(0.5, 0.5);
+
+    // Microscopic cosmic dust motes drifting across the diorama
+    this.spaceDustEmitter = this.add.particles(0, 0, 'fx_dust_mote', {
+      x: 455,
+      y: { min: 130, max: 420 },
+      speedX: { min: -22, max: -45 },
+      speedY: { min: -3, max: 3 },
+      scale: { min: 0.4, max: 0.9 },
+      alpha: { start: 0.5, end: 0 },
+      lifespan: 11000,
+      blendMode: 'ADD',
+      frequency: 350,
+    });
+    this.spaceDustEmitter.setDepth(5);
 
     // Rim-planet horizon arc at bottom of diorama
     const horizonGfx = this.add.graphics();
@@ -274,6 +315,10 @@ export class CombatScene extends Phaser.Scene {
     // --- LEFT: Player Freighter ---
     this.playerShipContainer = this.add.container(108, 298);
 
+    // Player Terabai Shield Aura (renders behind player sprite)
+    this.playerShieldAura = this.add.graphics();
+    this.playerShipContainer.add(this.playerShieldAura);
+
     // Subtle engine hover tween
     this.playerShipSprite = this.add.image(0, 0, 'ship_player').setScale(0.5);
     this.playerShipContainer.add(this.playerShipSprite);
@@ -332,8 +377,22 @@ export class CombatScene extends Phaser.Scene {
       ease: 'Sine.easeInOut',
     });
 
+    this.tweens.add({
+      targets: this.playerShipSprite,
+      angle: 1.6,
+      duration: 2400,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
     // --- RIGHT: Alliance Customs Cutter ---
     this.enemyShipContainer = this.add.container(336, 298);
+
+    // Enemy Shield Aura (renders behind enemy sprite)
+    this.enemyShieldAura = this.add.graphics();
+    this.enemyShipContainer.add(this.enemyShieldAura);
+
     this.enemyShipSprite = this.add.image(0, 0, 'ship_enemy').setScale(0.5);
     this.enemyShipSprite.setInteractive({ useHandCursor: true });
     this.enemyShipSprite.on('pointerdown', () => {
@@ -388,6 +447,43 @@ export class CombatScene extends Phaser.Scene {
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
+
+    this.tweens.add({
+      targets: this.enemyShipSprite,
+      angle: -1.6,
+      duration: 2800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // Real-Time Animated Plasma Thrusters (Player Freighter)
+    this.playerThrusterEmitter = this.add.particles(0, 0, 'fx_plasma_flare', {
+      speed: { min: 45, max: 95 },
+      angle: { min: 172, max: 188 },
+      scale: { start: 0.65, end: 0.05 },
+      alpha: { start: 0.85, end: 0 },
+      tint: [0xffffff, 0xfef08a, 0xf59e0b, 0xe09f3e],
+      lifespan: { min: 240, max: 420 },
+      blendMode: 'ADD',
+      frequency: 24,
+    });
+    this.playerThrusterEmitter.setDepth(18);
+
+    // Combat Spark Explosion Emitter
+    this.combatSparkEmitter = this.add.particles(0, 0, 'fx_spark', {
+      speed: { min: 80, max: 230 },
+      scale: { start: 1.1, end: 0 },
+      alpha: { start: 1, end: 0 },
+      tint: [0xffffff, 0xfef08a, 0xf59e0b, 0xef4444],
+      lifespan: { min: 250, max: 550 },
+      blendMode: 'ADD',
+      emitting: false,
+    });
+    this.combatSparkEmitter.setDepth(60);
+
+    // Initialize Enemy Thruster Emitter for Sector 1
+    this.initEnemyThruster(1);
 
     // --- Prominent Enemy Intent Callout Box above Cutter (x = 315, y = 172) ---
     this.intentBoxContainer = this.add.container(312, 172);
@@ -700,7 +796,104 @@ export class CombatScene extends Phaser.Scene {
     }
   }
 
+  private initEnemyThruster(sectorNumber: number): void {
+    if (this.enemyThrusterEmitter) {
+      this.enemyThrusterEmitter.destroy();
+    }
+    this.currentEnemySector = sectorNumber;
+
+    if (sectorNumber === 3) {
+      // Sector 3 Dreadnought: Heavy rumbling red/orange rocket plume
+      this.enemyThrusterEmitter = this.add.particles(0, 0, 'fx_plasma_flare', {
+        speed: { min: 60, max: 120 },
+        angle: { min: -10, max: 10 },
+        scale: { start: 0.85, end: 0.1 },
+        alpha: { start: 0.9, end: 0 },
+        tint: [0xffffff, 0xfef08a, 0xf97316, 0xef4444],
+        lifespan: { min: 280, max: 480 },
+        blendMode: 'ADD',
+        frequency: 20,
+      });
+    } else if (sectorNumber === 2) {
+      // Sector 2 Cutter: Twin deep azure/cyan ion thrusters
+      this.enemyThrusterEmitter = this.add.particles(0, 0, 'fx_ion_flare', {
+        speed: { min: 50, max: 95 },
+        angle: { min: -8, max: 8 },
+        scale: { start: 0.65, end: 0.08 },
+        alpha: { start: 0.85, end: 0 },
+        tint: [0xffffff, 0xbae6fd, 0x38bdf8, 0x0284c7],
+        lifespan: { min: 230, max: 390 },
+        blendMode: 'ADD',
+        frequency: 22,
+      });
+    } else {
+      // Sector 1 Skiff: Fast cyan/white ion needle
+      this.enemyThrusterEmitter = this.add.particles(0, 0, 'fx_ion_flare', {
+        speed: { min: 45, max: 85 },
+        angle: { min: -6, max: 6 },
+        scale: { start: 0.5, end: 0.05 },
+        alpha: { start: 0.85, end: 0 },
+        tint: [0xffffff, 0x7dd3fc, 0x38bdf8],
+        lifespan: { min: 200, max: 340 },
+        blendMode: 'ADD',
+        frequency: 25,
+      });
+    }
+    this.enemyThrusterEmitter.setDepth(18);
+  }
+
+  private drawShieldAuras(state: CombatState): void {
+    // Player Terabai Shield Aura
+    this.playerShieldAura.clear();
+    if (state.player.evasion > 0) {
+      this.playerShieldAura.setVisible(true);
+      this.playerShieldAura.fillStyle(0x0284c7, 0.16);
+      this.playerShieldAura.beginPath();
+      this.playerShieldAura.moveTo(0, -32);
+      this.playerShieldAura.lineTo(52, -14);
+      this.playerShieldAura.lineTo(52, 14);
+      this.playerShieldAura.lineTo(0, 32);
+      this.playerShieldAura.lineTo(-52, 14);
+      this.playerShieldAura.lineTo(-52, -14);
+      this.playerShieldAura.closePath();
+      this.playerShieldAura.fillPath();
+      this.playerShieldAura.lineStyle(1.8, 0x38bdf8, 0.85);
+      this.playerShieldAura.strokePath();
+      this.playerShieldAura.lineStyle(1, 0xfde68a, 0.5);
+      this.playerShieldAura.lineBetween(0, -28, 0, 28);
+    } else {
+      this.playerShieldAura.setVisible(false);
+    }
+
+    // Enemy Shield Aura
+    this.enemyShieldAura.clear();
+    if (state.enemy.shield > 0) {
+      this.enemyShieldAura.setVisible(true);
+      this.enemyShieldAura.fillStyle(0x0c4a6e, 0.18);
+      this.enemyShieldAura.beginPath();
+      this.enemyShieldAura.moveTo(0, -34);
+      this.enemyShieldAura.lineTo(56, -16);
+      this.enemyShieldAura.lineTo(56, 16);
+      this.enemyShieldAura.lineTo(0, 34);
+      this.enemyShieldAura.lineTo(-56, 16);
+      this.enemyShieldAura.lineTo(-56, -16);
+      this.enemyShieldAura.closePath();
+      this.enemyShieldAura.fillPath();
+      this.enemyShieldAura.lineStyle(1.8, 0x7dd3fc, 0.85);
+      this.enemyShieldAura.strokePath();
+    } else {
+      this.enemyShieldAura.setVisible(false);
+    }
+  }
+
   private updateShipsAndIntent(state: CombatState): void {
+    // Reconfigure enemy thruster if sector changed
+    if (this.currentEnemySector !== state.sector.number) {
+      this.initEnemyThruster(state.sector.number);
+    }
+    // Update live shield auras
+    this.drawShieldAuras(state);
+
     // Dynamic enemy ship texture & label
     if (this.enemyShipSprite && state.enemy.spriteKey) {
       this.enemyShipSprite.setTexture(state.enemy.spriteKey);
@@ -1199,7 +1392,7 @@ export class CombatScene extends Phaser.Scene {
   }
 
   /** Procedural WebAudio synthesizer with Sape' pentatonic lute plucks and Gendang drum resonance. */
-  private sfx(kind: 'pickup' | 'play' | 'hit' | 'deny' | 'airlock' | 'alarm' | 'win' | 'lose'): void {
+  private sfx(kind: 'pickup' | 'play' | 'hit' | 'deny' | 'airlock' | 'alarm' | 'win' | 'lose' | 'laser' | 'shield'): void {
     const sound = this.sound as Phaser.Sound.WebAudioSoundManager;
     const ctx = sound.context;
     if (!ctx || sound.locked) return;
@@ -1255,6 +1448,36 @@ export class CombatScene extends Phaser.Scene {
       return;
     }
 
+    if (kind === 'laser') {
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(920, t);
+      osc.frequency.exponentialRampToValueAtTime(240, t + 0.08);
+      gain.gain.setValueAtTime(0.06, t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.1);
+      return;
+    }
+
+    if (kind === 'shield') {
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, t); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, t + 0.14);
+      gain.gain.setValueAtTime(0.08, t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.32);
+      return;
+    }
+
     const presets: Record<string, { f0: number; f1: number; dur: number; type: OscillatorType; vol: number }> = {
       pickup: { f0: 520, f1: 700, dur: 0.06, type: 'triangle', vol: 0.05 },
       deny: { f0: 160, f1: 120, dur: 0.1, type: 'square', vol: 0.04 },
@@ -1303,42 +1526,24 @@ export class CombatScene extends Phaser.Scene {
     this.sfx('play');
 
     if (card.damage && card.damage > 0) {
-      this.fireProjectileEffect(
-        this.playerShipContainer.x + 55,
-        this.playerShipContainer.y,
-        this.enemyShipContainer.x - 45,
-        this.enemyShipContainer.y,
-        0xf97316
-      );
+      const fromX = this.playerShipContainer.x + 45;
+      const fromY = this.playerShipContainer.y + this.playerShipSprite.y;
+      const toX = this.enemyShipContainer.x - 30;
+      const toY = this.enemyShipContainer.y + this.enemyShipSprite.y;
 
-      // Recoil player ship
-      this.jolt(this.playerShipContainer, CombatScene.PLAYER_HOME_X, -10, 0);
-
-      // Flash & shake enemy ship
-      this.enemyShipSprite.setTintFill(0xffffff);
-      this.time.delayedCall(110, () => this.enemyShipSprite.clearTint());
-      this.jolt(this.enemyShipContainer, CombatScene.ENEMY_HOME_X, 12, 1);
-      this.sfx('hit');
-
-      if (result.damageToShield > 0) {
-        this.spawnFloatingText(
-          this.enemyShipContainer.x,
-          this.enemyShipContainer.y - 45,
-          `-${result.damageToShield} SHIELD`,
-          '#38bdf8'
-        );
-      }
-      if (result.damageToHull > 0) {
-        this.spawnFloatingText(
-          this.enemyShipContainer.x,
-          this.enemyShipContainer.y - 22,
-          `-${result.damageToHull} HULL`,
-          '#ef4444'
-        );
+      if (card.templateId === 'parang_snap') {
+        this.playParangSnapVFX(fromX, fromY, toX, toY, result);
+      } else if (card.templateId === 'sumpit_dart') {
+        this.playSumpitDartVFX(fromX, fromY, toX, toY, result);
+      } else if (card.templateId === 'rajang_whirlpool' || card.templateId === 'kenyalang_dive') {
+        this.playRajangVolleyVFX(fromX, fromY, toX, toY, result);
+      } else {
+        this.playGenericAttackVFX(fromX, fromY, toX, toY, result);
       }
     }
 
     if (result.evasionGained > 0) {
+      this.playShieldWardVFX(this.playerShipContainer);
       this.spawnFloatingText(
         this.playerShipContainer.x,
         this.playerShipContainer.y - 42,
@@ -1464,13 +1669,7 @@ export class CombatScene extends Phaser.Scene {
     } else if (result.outcome !== 'DEFEAT_HEAT' || result.enemyHeatAdded > 0) {
       if (intent.id === 'CARGO_SCAN') {
         this.sfx('alarm');
-        this.fireProjectileEffect(
-          CombatScene.ENEMY_HOME_X - 50,
-          this.enemyShipContainer.y,
-          CombatScene.PLAYER_HOME_X + 40,
-          this.playerShipContainer.y,
-          0xeab308
-        );
+        this.playCargoScanVFX(this.playerShipContainer);
         this.spawnFloatingText(
           this.playerShipContainer.x,
           this.playerShipContainer.y - 45,
@@ -1478,36 +1677,16 @@ export class CombatScene extends Phaser.Scene {
           '#facc15'
         );
       } else if (intent.id === 'WARNING_SHOT' || intent.id === 'BROADSIDE') {
-        this.fireProjectileEffect(
-          this.enemyShipContainer.x - 50,
-          this.enemyShipContainer.y,
-          this.playerShipContainer.x + 40,
-          this.playerShipContainer.y,
-          0x38bdf8
+        this.playEnemyCannonVFX(
+          this.enemyShipContainer.x - 30,
+          this.enemyShipContainer.y + this.enemyShipSprite.y,
+          this.playerShipContainer.x + 35,
+          this.playerShipContainer.y + this.playerShipSprite.y,
+          intent.id === 'BROADSIDE',
+          result
         );
-        this.playerShipSprite.setTintFill(0xef4444);
-        this.time.delayedCall(130, () => this.playerShipSprite.clearTint());
-        this.jolt(this.playerShipContainer, CombatScene.PLAYER_HOME_X, -16, 2);
-        this.cameras.main.shake(140, intent.id === 'BROADSIDE' ? 0.008 : 0.004);
-        if (result.hullDamageTaken > 0) this.sfx('hit');
-
-        if (result.damageAbsorbedByEvasion > 0) {
-          this.spawnFloatingText(
-            this.playerShipContainer.x,
-            this.playerShipContainer.y - 52,
-            `EVADED ${result.damageAbsorbedByEvasion} DMG`,
-            '#38bdf8'
-          );
-        }
-        if (result.hullDamageTaken > 0) {
-          this.spawnFloatingText(
-            this.playerShipContainer.x,
-            this.playerShipContainer.y - 25,
-            `-${result.hullDamageTaken} HULL`,
-            '#ef4444'
-          );
-        }
       } else if (intent.id === 'REINFORCE_HULL') {
+        this.playShieldWardVFX(this.enemyShipContainer);
         this.spawnFloatingText(
           this.enemyShipContainer.x,
           this.enemyShipContainer.y - 35,
@@ -1517,31 +1696,347 @@ export class CombatScene extends Phaser.Scene {
       }
     }
 
-    this.time.delayedCall(260, () => {
+    this.time.delayedCall(420, () => {
       this.isResolvingTurn = false;
       this.refreshAllUI(true);
     });
   }
 
-  private fireProjectileEffect(
+  private playParangSnapVFX(
     fromX: number,
     fromY: number,
     toX: number,
     toY: number,
-    color: number
+    result: any
+  ): void {
+    // Crescent glowing plasma blade flying with angular spin
+    const slash = this.add.image(fromX, fromY, 'fx_slash_arc').setScale(1.2).setDepth(60);
+    slash.setTint(0xfacc15);
+
+    // Muzzle plasma flare
+    const flare = this.add.image(fromX, fromY, 'fx_plasma_flare').setScale(0.9).setDepth(61);
+    this.tweens.add({
+      targets: flare,
+      scale: 1.5,
+      alpha: 0,
+      duration: 150,
+      onComplete: () => flare.destroy(),
+    });
+
+    this.tweens.add({
+      targets: slash,
+      x: toX,
+      y: toY,
+      angle: 360,
+      duration: 150,
+      ease: 'Quad.easeIn',
+      onComplete: () => {
+        slash.destroy();
+
+        // High-intensity diagonal slash beam cut
+        const sliceLine = this.add.graphics();
+        sliceLine.lineStyle(4, 0xffffff, 1);
+        sliceLine.lineBetween(toX - 28, toY - 26, toX + 28, toY + 26);
+        sliceLine.lineStyle(2, 0xf59e0b, 0.9);
+        sliceLine.lineBetween(toX - 38, toY - 36, toX + 38, toY + 36);
+        sliceLine.setDepth(65);
+        this.tweens.add({
+          targets: sliceLine,
+          alpha: 0,
+          duration: 180,
+          onComplete: () => sliceLine.destroy(),
+        });
+
+        // Additive spark explosion
+        this.combatSparkEmitter.explode(24, toX, toY);
+
+        // Flash & shake enemy ship
+        this.enemyShipSprite.setTintFill(0xffffff);
+        this.time.delayedCall(80, () => this.enemyShipSprite.clearTint());
+        this.jolt(this.enemyShipContainer, CombatScene.ENEMY_HOME_X, 12, 1);
+        this.cameras.main.shake(140, 0.005);
+        this.sfx('hit');
+
+        if (result.damageToShield > 0) {
+          this.spawnFloatingText(
+            this.enemyShipContainer.x,
+            this.enemyShipContainer.y - 45,
+            `-${result.damageToShield} SHIELD`,
+            '#38bdf8'
+          );
+        }
+        if (result.damageToHull > 0) {
+          this.spawnFloatingText(
+            this.enemyShipContainer.x,
+            this.enemyShipContainer.y - 22,
+            `-${result.damageToHull} HULL`,
+            '#ef4444'
+          );
+        }
+      },
+    });
+
+    // Recoil player ship
+    this.jolt(this.playerShipContainer, CombatScene.PLAYER_HOME_X, -10, 0);
+  }
+
+  private playSumpitDartVFX(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    result: any
+  ): void {
+    const bolt = this.add.image(fromX, fromY, 'fx_laser_bolt').setDepth(60);
+    bolt.setTint(0x4ade80);
+
+    this.tweens.add({
+      targets: bolt,
+      x: toX,
+      y: toY,
+      duration: 110,
+      ease: 'Linear',
+      onComplete: () => {
+        bolt.destroy();
+
+        // Concentric piercing shockwave ring
+        const shock = this.add.image(toX, toY, 'fx_shockwave').setScale(0.3).setAlpha(1).setDepth(65);
+        shock.setTint(0x4ade80);
+        this.tweens.add({
+          targets: shock,
+          scale: 1.4,
+          alpha: 0,
+          duration: 220,
+          onComplete: () => shock.destroy(),
+        });
+
+        this.combatSparkEmitter.explode(18, toX, toY);
+        this.enemyShipSprite.setTintFill(0x86efac);
+        this.time.delayedCall(80, () => this.enemyShipSprite.clearTint());
+        this.jolt(this.enemyShipContainer, CombatScene.ENEMY_HOME_X, 8, 1);
+        this.sfx('hit');
+
+        if (result.damageToHull > 0) {
+          this.spawnFloatingText(
+            this.enemyShipContainer.x,
+            this.enemyShipContainer.y - 22,
+            `-${result.damageToHull} HULL (PIERCED)`,
+            '#4ade80'
+          );
+        }
+      },
+    });
+
+    this.jolt(this.playerShipContainer, CombatScene.PLAYER_HOME_X, -6, 0);
+  }
+
+  private playRajangVolleyVFX(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    result: any
+  ): void {
+    for (let i = 0; i < 3; i++) {
+      this.time.delayedCall(i * 70, () => {
+        const bolt = this.add.image(fromX, fromY + (i - 1) * 7, 'fx_laser_bolt').setDepth(60);
+        bolt.setTint(0xef4444);
+        this.sfx('laser');
+        this.tweens.add({
+          targets: bolt,
+          x: toX,
+          y: toY + (i - 1) * 5,
+          duration: 110,
+          onComplete: () => {
+            bolt.destroy();
+            this.combatSparkEmitter.explode(12, toX, toY);
+            this.enemyShipSprite.setTintFill(0xffffff);
+            this.time.delayedCall(45, () => this.enemyShipSprite.clearTint());
+            this.jolt(this.enemyShipContainer, CombatScene.ENEMY_HOME_X, 5, 1);
+            if (i === 2) {
+              this.sfx('hit');
+              if (result.damageToShield > 0) {
+                this.spawnFloatingText(
+                  this.enemyShipContainer.x,
+                  this.enemyShipContainer.y - 45,
+                  `-${result.damageToShield} SHIELD`,
+                  '#38bdf8'
+                );
+              }
+              if (result.damageToHull > 0) {
+                this.spawnFloatingText(
+                  this.enemyShipContainer.x,
+                  this.enemyShipContainer.y - 22,
+                  `-${result.damageToHull} HULL`,
+                  '#ef4444'
+                );
+              }
+            }
+          },
+        });
+      });
+    }
+    this.jolt(this.playerShipContainer, CombatScene.PLAYER_HOME_X, -10, 0);
+  }
+
+  private playGenericAttackVFX(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    result: any
   ): void {
     const beam = this.add.graphics();
-    beam.lineStyle(4, color, 0.95);
+    beam.lineStyle(4, 0xf97316, 0.95);
     beam.lineBetween(fromX, fromY, toX, toY);
     beam.setDepth(50);
-
     this.tweens.add({
       targets: beam,
       alpha: 0,
-      duration: 220,
+      duration: 160,
       onComplete: () => beam.destroy(),
     });
+
+    this.combatSparkEmitter.explode(18, toX, toY);
+    this.enemyShipSprite.setTintFill(0xffffff);
+    this.time.delayedCall(90, () => this.enemyShipSprite.clearTint());
+    this.jolt(this.enemyShipContainer, CombatScene.ENEMY_HOME_X, 10, 1);
+    this.sfx('hit');
+
+    if (result.damageToShield > 0) {
+      this.spawnFloatingText(
+        this.enemyShipContainer.x,
+        this.enemyShipContainer.y - 45,
+        `-${result.damageToShield} SHIELD`,
+        '#38bdf8'
+      );
+    }
+    if (result.damageToHull > 0) {
+      this.spawnFloatingText(
+        this.enemyShipContainer.x,
+        this.enemyShipContainer.y - 22,
+        `-${result.damageToHull} HULL`,
+        '#ef4444'
+      );
+    }
   }
+
+  private playShieldWardVFX(container: Phaser.GameObjects.Container): void {
+    const ward = this.add.image(container.x, container.y, 'fx_shockwave').setScale(0.5).setDepth(55);
+    ward.setTint(0x38bdf8);
+    this.tweens.add({
+      targets: ward,
+      scale: 1.6,
+      alpha: 0,
+      duration: 350,
+      ease: 'Quad.easeOut',
+      onComplete: () => ward.destroy(),
+    });
+    this.combatSparkEmitter.explode(14, container.x, container.y);
+  }
+
+  private playEnemyCannonVFX(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    isBroadside: boolean,
+    result: any
+  ): void {
+    // Muzzle smoke puff at enemy
+    const smoke = this.add.image(fromX, fromY, 'fx_smoke').setScale(0.5).setDepth(45);
+    this.tweens.add({
+      targets: smoke,
+      scale: 1.4,
+      alpha: 0,
+      duration: 280,
+      onComplete: () => smoke.destroy(),
+    });
+
+    // Cannon shell
+    const shell = this.add.image(fromX, fromY, 'fx_plasma_flare').setScale(isBroadside ? 1.3 : 0.95).setDepth(60);
+    shell.setTint(isBroadside ? 0xef4444 : 0x38bdf8);
+
+    this.tweens.add({
+      targets: shell,
+      x: toX,
+      y: toY,
+      duration: 170,
+      ease: 'Quad.easeIn',
+      onComplete: () => {
+        shell.destroy();
+
+        if (result.damageAbsorbedByEvasion > 0) {
+          // Deflected by player Terabai shield!
+          const ripple = this.add.image(toX, toY, 'fx_shockwave').setScale(0.6).setDepth(65);
+          ripple.setTint(0x38bdf8);
+          this.tweens.add({
+            targets: ripple,
+            scale: 1.5,
+            alpha: 0,
+            duration: 250,
+            onComplete: () => ripple.destroy(),
+          });
+          this.combatSparkEmitter.explode(16, toX, toY);
+          this.sfx('shield');
+          this.spawnFloatingText(
+            this.playerShipContainer.x,
+            this.playerShipContainer.y - 52,
+            `EVADED ${result.damageAbsorbedByEvasion} DMG`,
+            '#38bdf8'
+          );
+        }
+
+        if (result.hullDamageTaken > 0) {
+          // Impact on Hull!
+          this.combatSparkEmitter.explode(isBroadside ? 28 : 18, toX, toY);
+          this.playerShipSprite.setTintFill(0xef4444);
+          this.time.delayedCall(120, () => this.playerShipSprite.clearTint());
+          this.jolt(this.playerShipContainer, CombatScene.PLAYER_HOME_X, -16, 2);
+          this.cameras.main.shake(150, isBroadside ? 0.008 : 0.004);
+          this.sfx('hit');
+          this.spawnFloatingText(
+            this.playerShipContainer.x,
+            this.playerShipContainer.y - 25,
+            `-${result.hullDamageTaken} HULL`,
+            '#ef4444'
+          );
+        }
+      },
+    });
+  }
+
+  private playCargoScanVFX(targetContainer: Phaser.GameObjects.Container): void {
+    const scanLine = this.add.graphics();
+    scanLine.setDepth(65);
+    const leftX = targetContainer.x - 42;
+    const rightX = targetContainer.x + 42;
+    const topY = targetContainer.y - 32;
+    const botY = targetContainer.y + 32;
+
+    const scanObj = { progress: 0 };
+    this.tweens.add({
+      targets: scanObj,
+      progress: 1,
+      duration: 420,
+      ease: 'Linear',
+      onUpdate: () => {
+        scanLine.clear();
+        const currentX = Phaser.Math.Linear(leftX, rightX, scanObj.progress);
+        scanLine.lineStyle(3, 0xfacc15, 0.95);
+        scanLine.lineBetween(currentX, topY, currentX, botY);
+        scanLine.lineStyle(1.5, 0xffffff, 1);
+        scanLine.lineBetween(currentX, topY, currentX, botY);
+        scanLine.fillStyle(0xeab308, 0.12);
+        scanLine.fillRect(leftX, topY, Math.max(1, currentX - leftX), botY - topY);
+      },
+      onComplete: () => {
+        scanLine.destroy();
+      },
+    });
+  }
+
+
 
   private spawnFloatingText(x: number, y: number, message: string, colorHex: string): void {
     const txt = this.addText(Phaser.Math.Clamp(x, 0, 450), y, message, {
@@ -1557,6 +2052,15 @@ export class CombatScene extends Phaser.Scene {
     // Keep the whole label on-screen
     const half = Math.min(txt.width / 2 + 6, 225);
     txt.x = Phaser.Math.Clamp(txt.x, half, 450 - half);
+
+    txt.setScale(0.7);
+    this.tweens.add({
+      targets: txt,
+      scale: 1.15,
+      duration: 120,
+      yoyo: true,
+      ease: 'Back.easeOut',
+    });
 
     this.tweens.add({
       targets: txt,

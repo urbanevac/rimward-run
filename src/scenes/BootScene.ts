@@ -490,11 +490,105 @@ export class BootScene extends Phaser.Scene {
 
   private generateParticleTexture(): void {
     const s = BootScene.TEXTURE_SCALE;
-    const gfx = this.make.graphics({ x: 0, y: 0 }, false);
-    gfx.setScale(s);
-    gfx.fillStyle(0xfde68a, 1);
-    gfx.fillCircle(4, 4, 4);
-    gfx.generateTexture('fx_spark', 8 * s, 8 * s);
-    gfx.destroy();
+
+    // 1. fx_spark (8x8 logical -> 16x16 at 2x): Core white with golden corona
+    const sparkGfx = this.make.graphics({ x: 0, y: 0 }, false);
+    sparkGfx.setScale(s);
+    sparkGfx.fillStyle(0xfde68a, 0.4);
+    sparkGfx.fillCircle(4, 4, 4);
+    sparkGfx.fillStyle(0xfacc15, 0.85);
+    sparkGfx.fillCircle(4, 4, 2.5);
+    sparkGfx.fillStyle(0xffffff, 1);
+    sparkGfx.fillCircle(4, 4, 1.2);
+    sparkGfx.generateTexture('fx_spark', 8 * s, 8 * s);
+    sparkGfx.destroy();
+
+    // 2. fx_plasma_flare (16x16 logical): Smooth radial golden/amber plasma plume
+    const flareGfx = this.make.graphics({ x: 0, y: 0 }, false);
+    flareGfx.setScale(s);
+    flareGfx.fillStyle(0xe09f3e, 0.2);
+    flareGfx.fillCircle(8, 8, 8);
+    flareGfx.fillStyle(0xf59e0b, 0.55);
+    flareGfx.fillCircle(8, 8, 5.5);
+    flareGfx.fillStyle(0xfef08a, 0.9);
+    flareGfx.fillCircle(8, 8, 3);
+    flareGfx.fillStyle(0xffffff, 1);
+    flareGfx.fillCircle(8, 8, 1.5);
+    flareGfx.generateTexture('fx_plasma_flare', 16 * s, 16 * s);
+    flareGfx.destroy();
+
+    // 3. fx_ion_flare (16x16 logical): Smooth radial cyan/electric blue ion plume
+    const ionGfx = this.make.graphics({ x: 0, y: 0 }, false);
+    ionGfx.setScale(s);
+    ionGfx.fillStyle(0x0284c7, 0.2);
+    ionGfx.fillCircle(8, 8, 8);
+    ionGfx.fillStyle(0x38bdf8, 0.55);
+    ionGfx.fillCircle(8, 8, 5.5);
+    ionGfx.fillStyle(0xbae6fd, 0.9);
+    ionGfx.fillCircle(8, 8, 3);
+    ionGfx.fillStyle(0xffffff, 1);
+    ionGfx.fillCircle(8, 8, 1.5);
+    ionGfx.generateTexture('fx_ion_flare', 16 * s, 16 * s);
+    ionGfx.destroy();
+
+    // 4. fx_smoke (20x20 logical): Soft expanding cloud puff
+    const smokeGfx = this.make.graphics({ x: 0, y: 0 }, false);
+    smokeGfx.setScale(s);
+    smokeGfx.fillStyle(0x475569, 0.25);
+    smokeGfx.fillCircle(10, 10, 9);
+    smokeGfx.fillStyle(0x64748b, 0.4);
+    smokeGfx.fillCircle(10, 10, 6);
+    smokeGfx.generateTexture('fx_smoke', 20 * s, 20 * s);
+    smokeGfx.destroy();
+
+    // 5. fx_slash_arc (40x40 logical): Curved kinetic plasma crescent for Parang Snap
+    const slashGfx = this.make.graphics({ x: 0, y: 0 }, false);
+    slashGfx.setScale(s);
+    slashGfx.lineStyle(4, 0xe09f3e, 0.4);
+    slashGfx.beginPath();
+    slashGfx.arc(20, 20, 15, Phaser.Math.DegToRad(220), Phaser.Math.DegToRad(320), false);
+    slashGfx.strokePath();
+    slashGfx.lineStyle(2.5, 0xf59e0b, 0.85);
+    slashGfx.beginPath();
+    slashGfx.arc(20, 20, 15, Phaser.Math.DegToRad(225), Phaser.Math.DegToRad(315), false);
+    slashGfx.strokePath();
+    slashGfx.lineStyle(1.2, 0xffffff, 1);
+    slashGfx.beginPath();
+    slashGfx.arc(20, 20, 15, Phaser.Math.DegToRad(230), Phaser.Math.DegToRad(310), false);
+    slashGfx.strokePath();
+    slashGfx.generateTexture('fx_slash_arc', 40 * s, 40 * s);
+    slashGfx.destroy();
+
+    // 6. fx_laser_bolt (32x8 logical): Supersonic laser needle with neon edge
+    const boltGfx = this.make.graphics({ x: 0, y: 0 }, false);
+    boltGfx.setScale(s);
+    boltGfx.fillStyle(0x38bdf8, 0.3);
+    boltGfx.fillRoundedRect(0, 0, 32, 8, 4);
+    boltGfx.fillStyle(0x7dd3fc, 0.8);
+    boltGfx.fillRoundedRect(4, 1.5, 24, 5, 2.5);
+    boltGfx.fillStyle(0xffffff, 1);
+    boltGfx.fillRoundedRect(8, 2.5, 16, 3, 1.5);
+    boltGfx.generateTexture('fx_laser_bolt', 32 * s, 8 * s);
+    boltGfx.destroy();
+
+    // 7. fx_dust_mote (6x6 logical): Microscopic drifting space dust
+    const dustGfx = this.make.graphics({ x: 0, y: 0 }, false);
+    dustGfx.setScale(s);
+    dustGfx.fillStyle(0xfde68a, 0.35);
+    dustGfx.fillCircle(3, 3, 3);
+    dustGfx.fillStyle(0xffffff, 0.8);
+    dustGfx.fillCircle(3, 3, 1.5);
+    dustGfx.generateTexture('fx_dust_mote', 6 * s, 6 * s);
+    dustGfx.destroy();
+
+    // 8. fx_shockwave (48x48 logical): Concentric energy ripple
+    const shockGfx = this.make.graphics({ x: 0, y: 0 }, false);
+    shockGfx.setScale(s);
+    shockGfx.lineStyle(2, 0x38bdf8, 0.8);
+    shockGfx.strokeCircle(24, 24, 20);
+    shockGfx.lineStyle(1, 0xffffff, 0.95);
+    shockGfx.strokeCircle(24, 24, 18);
+    shockGfx.generateTexture('fx_shockwave', 48 * s, 48 * s);
+    shockGfx.destroy();
   }
 }
