@@ -7,10 +7,14 @@ interface CardVisual {
   card: Card;
   container: Phaser.GameObjects.Container;
   bgGraphics: Phaser.GameObjects.Graphics;
+  shadowGfx: Phaser.GameObjects.Graphics;
+  sheenGfx?: Phaser.GameObjects.Graphics;
+  sheenTween?: Phaser.Tweens.Tween;
   homeX: number;
   homeY: number;
   homeAngle: number;
   baseDepth: number;
+  index: number;
 }
 
 export class CombatScene extends Phaser.Scene {
@@ -994,10 +998,10 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private renderHand(state: CombatState): void {
-    // Destroy previous card visuals (kill in-flight tweens first so their
-    // onComplete callbacks never touch a destroyed container)
+    // Destroy previous card visuals (kill in-flight tweens and stop sheen loops)
     for (const cv of this.cardVisuals) {
       this.tweens.killTweensOf(cv.container);
+      if (cv.sheenTween) cv.sheenTween.stop();
       cv.container.destroy();
     }
     this.cardVisuals = [];
@@ -1010,16 +1014,17 @@ export class CombatScene extends Phaser.Scene {
     const cardHeight = 148;
     const centerY = 612;
 
-    // Fan spacing across 450px width
-    const totalSpread = Math.min(342, (count - 1) * 104);
+    // Organic Fan Spacing across bottom console
+    const totalSpread = Math.min(348, (count - 1) * 102);
     const startX = 225 - totalSpread / 2;
     const stepX = count > 1 ? totalSpread / (count - 1) : 0;
 
     hand.forEach((card, index) => {
       const norm = count > 1 ? (index / (count - 1)) * 2 - 1 : 0; // -1 to +1
       const homeX = startX + index * stepX;
-      const homeY = centerY + Math.abs(norm) * 8;
-      const homeAngle = norm * 4.5;
+      // Parabolic curve: center cards sit upright and elevated, outer cards gently droop
+      const homeY = centerY + Math.pow(Math.abs(norm), 1.8) * 14;
+      const homeAngle = norm * 7.5;
       const baseDepth = 20 + index;
 
       const container = this.add.container(homeX, homeY);
@@ -1031,11 +1036,17 @@ export class CombatScene extends Phaser.Scene {
       const isContraband = card.type === 'Contraband';
       const roleColors = this.getRoleColors(card.type);
 
+      // 1. Dynamic Drop Shadow (layer 0)
+      const shadowGfx = this.add.graphics();
+      this.drawCardShadow(shadowGfx, 8);
+      container.add(shadowGfx);
+
+      // 2. Main Card Body Frame
       const bgGraphics = this.add.graphics();
       this.drawCardFrame(bgGraphics, card, check.playable, false);
       container.add(bgGraphics);
 
-      // Role label inside the color stripe (right of the AP badge)
+      // 3. Role Label in Header Stripe
       const roleLabel = this.addText(8, -cardHeight / 2 + 15, card.type.toUpperCase(), {
           fontFamily: 'Courier New, monospace',
           fontSize: '8.5px',
@@ -1045,17 +1056,29 @@ export class CombatScene extends Phaser.Scene {
         .setOrigin(0.5);
       container.add(roleLabel);
 
-      // AP Cost Badge (top-left corner)
+      // 4. Hexagonal AP Energy Capacitor (top-left)
       const costBadgeGfx = this.add.graphics();
       const badgeCol = isContraband ? 0xef4444 : check.playable ? 0xeab308 : 0x475569;
       costBadgeGfx.fillStyle(0x0f172a, 1);
-      costBadgeGfx.fillCircle(-cardWidth / 2 + 16, -cardHeight / 2 + 16, 12);
+      costBadgeGfx.beginPath();
+      const bx = -cardWidth / 2 + 16;
+      const by = -cardHeight / 2 + 16;
+      const r = 13;
+      for (let i = 0; i < 6; i++) {
+        const a = (i * Math.PI) / 3;
+        const px = bx + Math.cos(a) * r;
+        const py = by + Math.sin(a) * r;
+        if (i === 0) costBadgeGfx.moveTo(px, py);
+        else costBadgeGfx.lineTo(px, py);
+      }
+      costBadgeGfx.closePath();
+      costBadgeGfx.fillPath();
       costBadgeGfx.lineStyle(2, badgeCol, 1);
-      costBadgeGfx.strokeCircle(-cardWidth / 2 + 16, -cardHeight / 2 + 16, 12);
+      costBadgeGfx.strokePath();
       container.add(costBadgeGfx);
 
       const costString = isContraband ? '!' : `${card.apCost}`;
-      const costText = this.addText(-cardWidth / 2 + 16, -cardHeight / 2 + 16, costString, {
+      const costText = this.addText(bx, by, costString, {
           fontFamily: 'Courier New, monospace',
           fontSize: '12px',
           fontStyle: 'bold',
@@ -1064,7 +1087,7 @@ export class CombatScene extends Phaser.Scene {
         .setOrigin(0.5);
       container.add(costText);
 
-      // Credit cost tag if applicable (Fast Talk)
+      // 5. Credit Cost Tag if applicable
       if (card.creditCost) {
         const crTag = this.addText(cardWidth / 2 - 11, -17, `-${card.creditCost}Cr`, {
             fontFamily: 'Courier New, monospace',
@@ -1076,47 +1099,141 @@ export class CombatScene extends Phaser.Scene {
         container.add(crTag);
       }
 
-      // Card Title
+      // 6. Card Title
       const titleText = this.addText(0, -36, card.title, {
           fontFamily: 'Courier New, monospace',
-          fontSize: '10px',
+          fontSize: '10.5px',
           fontStyle: 'bold',
-          color: '#f8fafc',
+          color: '#ffffff',
+          stroke: '#090d18',
+          strokeThickness: 3,
           align: 'center',
-          wordWrap: { width: cardWidth - 10 },
+          wordWrap: { width: cardWidth - 8 },
         })
         .setOrigin(0.5);
       container.add(titleText);
 
-      // Procedural Card Icon
-      const iconImg = this.add.image(0, -4, card.iconKey).setScale(0.425);
+      // 7. High-Contrast Procedural Card Icon & Radiant Glow
+      const iconGlow = this.add.graphics();
+      iconGlow.fillStyle(roleColors.border, 0.22);
+      iconGlow.fillCircle(0, -4, 18);
+      container.add(iconGlow);
+
+      const iconImg = this.add.image(0, -4, card.iconKey).setScale(0.52);
       container.add(iconImg);
 
-      // Crisp Rules Text
-      const descText = this.addText(0, 43, card.description, {
+      // 8. Crisp Rules Text
+      const descText = this.addText(0, 44, card.description, {
           fontFamily: 'Courier New, monospace',
           fontSize: '9.5px',
-          color: isContraband ? '#fecaca' : '#cbd5e1',
+          color: isContraband ? '#fecaca' : '#e2e8f0',
+          stroke: '#090d18',
+          strokeThickness: 2,
           align: 'center',
-          wordWrap: { width: cardWidth - 12 },
+          wordWrap: { width: cardWidth - 10 },
           lineSpacing: 2,
         })
         .setOrigin(0.5);
       container.add(descText);
 
+      // 9. Holographic Foil Sheen Overlay
+      const sheenGfx = this.add.graphics();
+      container.add(sheenGfx);
+
+      let sheenTween: Phaser.Tweens.Tween | undefined;
+      if (check.playable) {
+        const sheenObj = { p: -0.3 };
+        sheenTween = this.tweens.add({
+          targets: sheenObj,
+          p: 1.3,
+          duration: 850,
+          repeat: -1,
+          repeatDelay: 2500 + index * 350,
+          ease: 'Quad.easeInOut',
+          onUpdate: () => {
+            if (!container.active) return;
+            sheenGfx.clear();
+            const progress = sheenObj.p;
+            if (progress < 0 || progress > 1) return;
+            const sweepX = -cardWidth / 2 + progress * (cardWidth + 40);
+            const alpha = Math.sin(progress * Math.PI) * 0.24;
+            sheenGfx.fillStyle(0xffffff, alpha);
+            sheenGfx.beginPath();
+            sheenGfx.moveTo(sweepX - 14, -cardHeight / 2 + 4);
+            sheenGfx.lineTo(sweepX + 14, -cardHeight / 2 + 4);
+            sheenGfx.lineTo(sweepX - 10, cardHeight / 2 - 4);
+            sheenGfx.lineTo(sweepX - 38, cardHeight / 2 - 4);
+            sheenGfx.closePath();
+            sheenGfx.fillPath();
+          },
+        });
+      }
+
       const visual: CardVisual = {
         card,
         container,
         bgGraphics,
+        shadowGfx,
+        sheenGfx,
+        sheenTween,
         homeX,
         homeY,
         homeAngle,
         baseDepth,
+        index,
       };
       this.cardVisuals.push(visual);
 
       this.attachCardInteractions(visual);
     });
+  }
+
+  private drawCardShadow(gfx: Phaser.GameObjects.Graphics, elevation: number): void {
+    gfx.clear();
+    const w = 98;
+    const h = 148;
+    // Layer 1: Ambient contact shadow
+    gfx.fillStyle(0x000000, 0.42);
+    gfx.fillRoundedRect(-w / 2 + 4, -h / 2 + elevation * 0.6, w - 8, h - 2, 8);
+    // Layer 2: Diffuse elevation projection shadow
+    if (elevation > 10) {
+      gfx.fillStyle(0x000000, 0.18);
+      gfx.fillRoundedRect(-w / 2 - 2, -h / 2 + elevation, w + 4, h + 4, 12);
+    }
+  }
+
+  private spreadHand(hoveredIndex: number): void {
+    for (const cv of this.cardVisuals) {
+      if (!cv.container.active || cv.index === hoveredIndex) continue;
+      const diff = cv.index - hoveredIndex;
+      const dir = Math.sign(diff);
+      const shiftX = dir * (Math.abs(diff) === 1 ? 22 : 30);
+      const shiftAngle = dir * 2.8;
+
+      this.tweens.killTweensOf(cv.container);
+      this.tweens.add({
+        targets: cv.container,
+        x: cv.homeX + shiftX,
+        angle: cv.homeAngle + shiftAngle,
+        duration: 160,
+        ease: 'Quad.easeOut',
+      });
+    }
+  }
+
+  private resetHandSpread(hoveredIndex?: number): void {
+    for (const cv of this.cardVisuals) {
+      if (!cv.container.active || (hoveredIndex !== undefined && cv.index === hoveredIndex)) continue;
+      this.tweens.killTweensOf(cv.container);
+      this.tweens.add({
+        targets: cv.container,
+        x: cv.homeX,
+        y: cv.homeY,
+        angle: cv.homeAngle,
+        duration: 180,
+        ease: 'Back.easeOut',
+      });
+    }
   }
 
   private drawCardFrame(
@@ -1133,8 +1250,8 @@ export class CombatScene extends Phaser.Scene {
 
     gfx.clear();
 
-    // Terabai faceted war shield body
-    const bodyFill = isContraband ? 0x2c0b0e : 0x151d2c;
+    // 1. Outer bevel card body
+    const bodyFill = isContraband ? 0x24070a : 0x0f172a;
     gfx.fillStyle(bodyFill, 0.98);
     gfx.beginPath();
     gfx.moveTo(-w / 2 + bevel, -h / 2);
@@ -1148,23 +1265,42 @@ export class CombatScene extends Phaser.Scene {
     gfx.closePath();
     gfx.fillPath();
 
-    // Role color stripe across top
-    gfx.fillStyle(roleColors.stripe, 0.92);
+    // 2. Role header banner stripe across top
+    gfx.fillStyle(roleColors.stripe, 0.95);
     gfx.beginPath();
     gfx.moveTo(-w / 2 + bevel, -h / 2 + 2);
     gfx.lineTo(w / 2 - bevel, -h / 2 + 2);
     gfx.lineTo(w / 2 - 2, -h / 2 + bevel);
-    gfx.lineTo(w / 2 - 2, -h / 2 + 26);
-    gfx.lineTo(-w / 2 + 2, -h / 2 + 26);
+    gfx.lineTo(w / 2 - 2, -h / 2 + 25);
+    gfx.lineTo(-w / 2 + 2, -h / 2 + 25);
     gfx.lineTo(-w / 2 + 2, -h / 2 + bevel);
     gfx.closePath();
     gfx.fillPath();
 
-    // Inner artwork frame with Dayak diamond notches
-    gfx.fillStyle(0x070c18, 0.92);
-    gfx.fillRoundedRect(-w / 2 + 8, -22, w - 16, 36, 4);
+    // 3. High-contrast cyber-Sarawakian artwork vignette box (y = -26..+18)
+    const artW = w - 14;
+    const artH = 46;
+    const artY = -4;
 
-    // Outer Terabai stroke
+    let artBg = 0x070c18;
+    if (card.type === 'Mercenary') artBg = 0x1c090c;
+    else if (card.type === 'Pilot') artBg = 0x061526;
+    else if (card.type === 'Mechanic') artBg = 0x071a14;
+    else if (card.type === 'Captain') artBg = 0x1c1507;
+    else if (card.type === 'Contraband') artBg = 0x220709;
+
+    gfx.fillStyle(artBg, 0.96);
+    gfx.fillRoundedRect(-artW / 2, artY - artH / 2, artW, artH, 5);
+
+    // Decorative cyber grid & Dayak corner marks inside art frame
+    gfx.lineStyle(1, roleColors.border, 0.25);
+    gfx.lineBetween(-artW / 2 + 8, artY, artW / 2 - 8, artY);
+    gfx.lineBetween(0, artY - artH / 2 + 4, 0, artY + artH / 2 - 4);
+    // Art box neon border
+    gfx.lineStyle(1.2, roleColors.border, 0.7);
+    gfx.strokeRoundedRect(-artW / 2, artY - artH / 2, artW, artH, 5);
+
+    // 4. Outer Terabai shield border
     const borderCol = highlighted
       ? 0xfef08a
       : isContraband
@@ -1186,7 +1322,7 @@ export class CombatScene extends Phaser.Scene {
     gfx.closePath();
     gfx.strokePath();
 
-    // Central spine accent
+    // Central spine & lower Terabai notch
     gfx.lineStyle(1, borderCol, 0.35);
     gfx.lineBetween(0, 24, 0, h / 2 - bevel);
   }
@@ -1201,6 +1337,7 @@ export class CombatScene extends Phaser.Scene {
       if (!container.active) return;
       const check = this.engine.canPlayCard(card.instanceId);
       this.drawCardFrame(visual.bgGraphics, card, check.playable, false);
+      this.drawCardShadow(visual.shadowGfx, 8);
       this.tweens.killTweensOf(container);
       this.tweens.add({
         targets: container,
@@ -1222,12 +1359,18 @@ export class CombatScene extends Phaser.Scene {
       container.setDepth(60);
       const check = this.engine.canPlayCard(card.instanceId);
       this.drawCardFrame(visual.bgGraphics, card, check.playable, true);
+      this.drawCardShadow(visual.shadowGfx, 22);
+
+      // Part adjacent cards aside
+      this.spreadHand(visual.index);
+
       this.tweens.killTweensOf(container);
       this.tweens.add({
         targets: container,
-        y: visual.homeY - 22,
-        scaleX: 1.12,
-        scaleY: 1.12,
+        x: visual.homeX,
+        y: visual.homeY - 26,
+        scaleX: 1.15,
+        scaleY: 1.15,
         angle: 0,
         duration: 130,
         ease: 'Back.easeOut',
@@ -1236,12 +1379,14 @@ export class CombatScene extends Phaser.Scene {
 
     container.on('pointerout', () => {
       if (isDragging || this.isResolvingTurn) return;
+      this.resetHandSpread();
       lowerCard();
     });
 
     // Touch devices often skip pointerout after a tap — lower on release
     container.on('pointerup', (pointer: Phaser.Input.Pointer) => {
       if (isDragging || this.isResolvingTurn) return;
+      this.resetHandSpread();
       if (pointer.wasTouch) lowerCard();
     });
 
@@ -1250,20 +1395,30 @@ export class CombatScene extends Phaser.Scene {
       isDragging = true;
       container.setDepth(90);
       this.tweens.killTweensOf(container);
-      container.setScale(1.12);
+      container.setScale(1.15);
       container.setAngle(0);
+      this.drawCardShadow(visual.shadowGfx, 34);
       this.sfx('pickup');
+
+      // Part other cards cleanly
+      this.spreadHand(visual.index);
 
       if (card.type === 'Contraband') {
         this.drawAirlockBox(true, false);
       }
     });
 
+    let lastDragX = visual.homeX;
     container.on(
       'drag',
       (_pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
         if (!isDragging) return;
         container.setPosition(dragX, dragY);
+
+        // Inertial angular tilt while dragging
+        const tilt = Phaser.Math.Clamp((dragX - lastDragX) * 0.45, -12, 12);
+        container.setAngle(tilt);
+        lastDragX = dragX;
 
         const isContraband = card.type === 'Contraband';
         const overAirlock = this.isPointInsideAirlock(dragX, dragY);
@@ -1307,6 +1462,8 @@ export class CombatScene extends Phaser.Scene {
     container.on('dragend', () => {
       if (!isDragging) return;
       isDragging = false;
+      this.resetHandSpread();
+      this.drawCardShadow(visual.shadowGfx, 8);
       this.stageHighlightGfx.clear();
       this.stagePlayHintText.setAlpha(0);
       this.drawAirlockBox(false, false);
@@ -1357,6 +1514,8 @@ export class CombatScene extends Phaser.Scene {
 
   private snapCardBack(visual: CardVisual): void {
     if (!visual.container.active) return;
+    this.resetHandSpread();
+    this.drawCardShadow(visual.shadowGfx, 8);
     const check = this.engine.canPlayCard(visual.card.instanceId);
     this.drawCardFrame(visual.bgGraphics, visual.card, check.playable, false);
     this.tweens.killTweensOf(visual.container);
